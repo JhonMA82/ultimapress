@@ -73,15 +73,15 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "pages_blocks_loop_grid" CASCADE;
   DROP TABLE "_pages_v_blocks_loop_grid" CASCADE;
   DROP TABLE "synced_sections" CASCADE;
-  ALTER TABLE "pages_blocks_design" DROP CONSTRAINT "pages_blocks_design_synced_id_synced_sections_id_fk";
+  ALTER TABLE "pages_blocks_design" DROP CONSTRAINT IF EXISTS "pages_blocks_design_synced_id_synced_sections_id_fk";
   
-  ALTER TABLE "_pages_v_blocks_design" DROP CONSTRAINT "_pages_v_blocks_design_synced_id_synced_sections_id_fk";
+  ALTER TABLE "_pages_v_blocks_design" DROP CONSTRAINT IF EXISTS "_pages_v_blocks_design_synced_id_synced_sections_id_fk";
   
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_synced_sections_fk";
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_synced_sections_fk";
   
-  DROP INDEX "pages_blocks_design_synced_idx";
-  DROP INDEX "_pages_v_blocks_design_synced_idx";
-  DROP INDEX "payload_locked_documents_rels_synced_sections_id_idx";
+  DROP INDEX IF EXISTS "pages_blocks_design_synced_idx";
+  DROP INDEX IF EXISTS "_pages_v_blocks_design_synced_idx";
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_synced_sections_id_idx";
   ALTER TABLE "pages_blocks_design" DROP COLUMN "synced_id";
   ALTER TABLE "_pages_v_blocks_design" DROP COLUMN "synced_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "synced_sections_id";
