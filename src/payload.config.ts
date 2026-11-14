@@ -12,6 +12,8 @@ import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Tags } from './collections/Tags'
 import { Comments } from './collections/Comments'
+import { SectionTemplates } from './collections/SectionTemplates'
+import { SyncedSections } from './collections/SyncedSections'
 import { SiteSettings } from './globals/SiteSettings'
 import { siteExportEndpoint, wordpressImportEndpoint } from './endpoints/wordpressImport'
 import { claudeConnectEndpoint } from './endpoints/claudeConnect'
@@ -28,6 +30,8 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  // Admin wording: the account page's settings heading says "Preferences".
+  i18n: { translations: { en: { general: { payloadSettings: 'Preferences' } } } },
   admin: {
     // Built-in avatar icon: no calls to Gravatar.
     avatar: 'default',
@@ -62,6 +66,18 @@ export default buildConfig({
           Component: '@/components/admin/SiteCode#SiteCodeView',
           path: '/site-code',
           meta: { title: 'Site code', openGraph: { title: 'Site code' } },
+        },
+        // Starter kits: a set of designed pages and a look, created in one go
+        starterKits: {
+          Component: '@/components/admin/StarterKits#StarterKitsView',
+          path: '/starter-kits',
+          meta: { title: 'Starter kits', openGraph: { title: 'Starter kits' } },
+        },
+        // The visual builder: a page full screen, drag and drop (opened from a page)
+        visualBuilder: {
+          Component: '@/components/admin/VisualBuilder#VisualBuilderView',
+          path: '/visual-builder',
+          meta: { title: 'Visual builder', openGraph: { title: 'Visual builder' } },
         },
       },
     },
@@ -101,7 +117,7 @@ export default buildConfig({
     // Database changes ship as migrations and run automatically when the site starts.
     prodMigrations: migrations,
   }),
-  collections: [Pages, Posts, Media, Categories, Tags, Comments, Users],
+  collections: [Pages, Posts, Media, Categories, Tags, Comments, Users, SectionTemplates, SyncedSections],
   cors: [getServerSideURL()].filter(Boolean),
   globals: [SiteSettings, Header, Footer],
   endpoints: [

@@ -38,6 +38,15 @@ export const Design: Block = {
       access: { create: editorsOnly, update: editorsOnly },
     },
     {
+      name: 'synced',
+      label: 'Synced section',
+      type: 'relationship',
+      relationTo: 'synced-sections',
+      admin: {
+        description: 'When set, this section shows the synced section, and changing it updates every page that uses it.',
+      },
+    },
+    {
       name: 'fullWidth',
       type: 'checkbox',
       defaultValue: true,

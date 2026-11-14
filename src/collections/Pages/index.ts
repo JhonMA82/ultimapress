@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { isAdminOrEditor } from '../../access/roles'
 import { authenticatedOrPublished } from '../../access/authenticatedOrPublished'
 import { Archive } from '../../blocks/ArchiveBlock/config'
+import { LoopGrid } from '../../blocks/LoopGrid/config'
 import { CallToAction } from '../../blocks/CallToAction/config'
 import { Content } from '../../blocks/Content/config'
 import { FormBlock } from '../../blocks/Form/config'
@@ -47,6 +48,11 @@ export const Pages: CollectionConfig<'pages'> = {
   },
   admin: {
     defaultColumns: ['title', 'slug', '_status', 'updatedAt'],
+    components: {
+      edit: {
+        beforeDocumentControls: ['@/components/admin/VisualBuilder/OpenButton#OpenButton'],
+      },
+    },
     group: 'Write',
     livePreview: {
       url: ({ data, req }) =>
@@ -97,6 +103,7 @@ export const Pages: CollectionConfig<'pages'> = {
                 FormBlock,
                 Embed,
                 Archive,
+                LoopGrid,
               ],
               required: true,
               admin: {

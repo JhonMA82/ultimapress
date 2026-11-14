@@ -2,6 +2,8 @@ import DOMPurify from 'dompurify'
 import { JSDOM } from 'jsdom'
 import postcss, { type AtRule, type Root, type Rule } from 'postcss'
 
+import { toEmbedURL } from './embed'
+
 /**
  * Designed sections hold HTML and CSS written by connected Claude (or an editor).
  * Everything that could run code, phish, or reach outside the section is removed here,
@@ -17,6 +19,23 @@ const getPurifier = () => {
       if (node.getAttribute?.('target') === '_blank') {
         node.setAttribute('rel', 'noopener noreferrer')
       }
+      // Frames are only kept for videos and maps from known services, with the address
+      // rebuilt from scratch, so nothing else can be loaded inside a page.
+      if (node.nodeName === 'IFRAME') {
+        const safe = toEmbedURL(node.getAttribute('src') || '')
+        if (!safe) {
+          node.parentNode?.removeChild(node)
+          return
+        }
+        for (const name of Array.from(node.attributes).map((a) => a.name)) {
+          if (!['src', 'title', 'style', 'class', 'id', 'width', 'height'].includes(name)) node.removeAttribute(name)
+        }
+        node.setAttribute('src', safe)
+        node.setAttribute('loading', 'lazy')
+        node.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin')
+        node.setAttribute('allow', 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen')
+        node.setAttribute('allowfullscreen', '')
+      }
     })
   }
   return purifier
@@ -26,9 +45,10 @@ export function cleanDesignHtml(html: string | null | undefined): string {
   if (!html) return ''
   return getPurifier().sanitize(html, {
     USE_PROFILES: { html: true, svg: true, svgFilters: true },
-    ADD_ATTR: ['target', 'loading', 'decoding'],
+    ADD_TAGS: ['iframe'],
+    ADD_ATTR: ['target', 'loading', 'decoding', 'allow', 'allowfullscreen', 'referrerpolicy', 'autoplay', 'muted', 'loop', 'playsinline', 'poster'],
     FORBID_TAGS: [
-      'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet',
+      'script', 'style', 'frame', 'frameset', 'object', 'embed', 'applet',
       'base', 'meta', 'link', 'form', 'input', 'textarea', 'select', 'option', 'noscript',
     ],
     FORBID_ATTR: ['formaction', 'srcdoc'],

@@ -2,6 +2,7 @@ import type { Payload, SanitizedPermissions, TypedUser, VisibleEntities } from '
 import { EntityType, groupNavItems } from '@payloadcms/ui/shared'
 import React from 'react'
 
+import { SidebarClient } from './Sidebar.client'
 import { SpineClient } from './Spine.client'
 import {
   SPINE_GROUPS,
@@ -183,7 +184,10 @@ export async function Spine(props: Props) {
   if (permissions?.globals?.['site-settings']?.update) {
     panels.get('design')!.sections.unshift({
       key: 'site-design',
-      rows: [{ key: 'look', label: 'Template, colours and fonts', href: `${admin}/globals/site-settings`, meta: 'Site Settings' }],
+      rows: [
+        { key: 'look', label: 'Template, colours and fonts', href: `${admin}/globals/site-settings`, meta: 'Site Settings' },
+        { key: 'kits', label: 'Starter kits', href: `${admin}/starter-kits`, meta: 'Designed pages in one click' },
+      ],
     })
   }
   panels.get('build')!.sections.unshift({
@@ -207,19 +211,19 @@ export async function Spine(props: Props) {
     }
   }
 
-  const u = (user ?? {}) as { name?: string; email?: string; role?: string }
-  return (
-    <SpineClient
-      admin={admin}
-      panels={[...panels.values()]}
-      user={{
-        name: u.name || u.email || 'You',
-        email: u.email || '',
-        role: u.role || '',
-        initial: (u.name || u.email || 'U').trim().charAt(0).toUpperCase(),
-      }}
-    />
-  )
+  const u = (user ?? {}) as { name?: string; email?: string; role?: string; menuStyle?: string }
+  const menuProps = {
+    admin,
+    panels: [...panels.values()],
+    user: {
+      name: u.name || u.email || 'You',
+      email: u.email || '',
+      role: u.role || '',
+      initial: (u.name || u.email || 'U').trim().charAt(0).toUpperCase(),
+    },
+  }
+  // Each person picks their menu under Account > Menu style.
+  return u.menuStyle === 'sidebar' ? <SidebarClient {...menuProps} /> : <SpineClient {...menuProps} />
 }
 
 export default Spine

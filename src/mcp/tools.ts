@@ -294,7 +294,7 @@ export const ultimaPressInstructions = `You are connected to an UltimaPress webs
 
 How the site is put together
 - Pages are a hero plus blocks in "layout". Read a page with findPages before changing it, and keep blocks you are not changing.
-- The "design" block (a designed section) holds HTML and CSS that you write yourself. Its CSS only applies inside that section; scripts, forms and iframes are removed. This is how you design pages to a professional standard.
+- The "design" block (a designed section) holds HTML and CSS that you write yourself. Its CSS only applies inside that section; scripts, forms and iframes are removed. This is how you design pages to a professional standard. The owner can also change sections in the visual builder: their edits are saved as element ids in the HTML and as styles after the line /* up-visual-builder */ at the end of the CSS. When you change a section, keep those ids and that part of the CSS unless asked to replace them.
 - The other blocks are ready-made: features, split (image and text), stats, gallery, pricing, testimonials, faq, cta, content, mediaBlock, formBlock (a real working form from the forms collection), embed (video or map), archive (latest posts). Use them for simple pages, for forms, and when the owner wants to edit sections in the admin without code.
 - Give every block a short blockName such as "services". It becomes the anchor, so "#services" (or "/#services" from the menu) scrolls to it.
 - Site-wide settings live in site-settings (siteTitle, tagline, template, primaryColor, accentColor, headingFont, bodyFont). The header global holds the menu and a highlighted "button"; the footer holds links, about, phone, email, address, hours and social links.

@@ -28,6 +28,10 @@ Payload reference: `.claude/skills/payload/SKILL.md`, then `.claude/skills/paylo
 | `src/components/admin/Spine/` | The Spine: the admin menu (replaces Payload's Nav) |
 | `src/components/admin/BuildFeature/` | The "Build a feature" admin page (`/admin/build-a-feature`) |
 | `src/components/admin/SiteCode/` | The "Site code" admin page (`/admin/site-code`): download the code, upload a new version, go back |
+| `src/components/admin/VisualBuilder/` | The visual builder (`/admin/visual-builder?page=<id>`, button on every page): drag and drop on designed sections. Its styles are saved after `/* up-visual-builder */` in a section's CSS (`src/utilities/builderCss.ts`) |
+| `src/components/Widgets/` | Builder widgets on the site: shared CSS (`styles.ts`) and the small script that runs sliders, tabs, popups, countdowns and more (`runtime.ts`), loaded only on pages that use them |
+| `src/collections/SyncedSections.ts`, `src/blocks/LoopGrid/` | Synced sections (one section on many pages) and the content grid block |
+| `src/components/admin/StarterKits/` | Starter kits (`/admin/starter-kits`): designed pages and a look in one click |
 | `src/endpoints/siteCode.ts`, `src/siteCode/` | `/api/site-code/*`: admin only, password asked again for anything that changes the live site |
 | `docker/supervisor.mjs` | Runs the site in Docker and replaces its code safely (backup, build, check, switch, roll back) |
 | `scripts/ship.mjs` | `pnpm ship`: sends this folder to the owner's site, where it waits for their password |

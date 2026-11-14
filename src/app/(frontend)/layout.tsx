@@ -16,6 +16,8 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings, mediaURL, safeColor } from '@/utilities/getSiteSettings'
 import { MaintenancePage } from '@/components/MaintenancePage'
+import { Widgets } from '@/components/Widgets'
+import { WIDGET_CSS } from '@/components/Widgets/styles'
 
 import './globals.css'
 
@@ -74,6 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `:root{--up-primary:${primary};--up-accent:${accent};--up-font-heading:'${headingFont}',ui-sans-serif,system-ui,sans-serif;--up-font-body:'${bodyFont}',ui-sans-serif,system-ui,sans-serif;}`,
           }}
         />
+        <style id="ultimapress-widgets" dangerouslySetInnerHTML={{ __html: WIDGET_CSS }} />
         {customCSS && <style id="ultimapress-custom-css" dangerouslySetInnerHTML={{ __html: customCSS }} />}
       </head>
       <body>
@@ -90,6 +93,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Header />
               {children}
               <Footer />
+              <Widgets />
             </>
           )}
         </Providers>

@@ -4,6 +4,9 @@ import * as migration_20261111_205754_brand_colours from './20261111_205754_bran
 import * as migration_20261112_235053_add_image_tool from './20261112_235053_add_image_tool';
 import * as migration_20261113_002024_design_blocks from './20261113_002024_design_blocks';
 import * as migration_20261113_004837_designed_sections from './20261113_004837_designed_sections';
+import * as migration_20261114_162748_menu_style from './20261114_162748_menu_style';
+import * as migration_20261114_185025_section_templates from './20261114_185025_section_templates';
+import * as migration_20261114_193813_builder_widgets from './20261114_193813_builder_widgets';
 
 export const migrations = [
   {
@@ -34,6 +37,21 @@ export const migrations = [
   {
     up: migration_20261113_004837_designed_sections.up,
     down: migration_20261113_004837_designed_sections.down,
-    name: '20261113_004837_designed_sections'
+    name: '20261113_004837_designed_sections',
+  },
+  {
+    up: migration_20261114_162748_menu_style.up,
+    down: migration_20261114_162748_menu_style.down,
+    name: '20261114_162748_menu_style',
+  },
+  {
+    up: migration_20261114_185025_section_templates.up,
+    down: migration_20261114_185025_section_templates.down,
+    name: '20261114_185025_section_templates',
+  },
+  {
+    up: migration_20261114_193813_builder_widgets.up,
+    down: migration_20261114_193813_builder_widgets.down,
+    name: '20261114_193813_builder_widgets'
   },
 ];

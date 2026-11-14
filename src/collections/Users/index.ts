@@ -58,6 +58,21 @@ export const Users: CollectionConfig = {
       name: 'bio',
       type: 'textarea',
     },
+    {
+      name: 'menuStyle',
+      label: 'Menu style',
+      type: 'select',
+      defaultValue: 'spine',
+      options: [
+        { label: 'Spine', value: 'spine' },
+        { label: 'Sidebar', value: 'sidebar' },
+      ],
+      admin: {
+        position: 'sidebar',
+        isClearable: false,
+        description: 'How your admin menu looks. Spine is the line with a point per section; Sidebar is the classic list down the left.',
+      },
+    },
   ],
   hooks: {
     beforeChange: [

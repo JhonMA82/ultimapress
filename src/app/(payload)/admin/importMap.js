@@ -28,6 +28,7 @@ import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c08
 import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { SlugField as SlugField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
+import { OpenButton as OpenButton_f61215d70847fd4124c42182c8b819f5 } from '@/components/admin/VisualBuilder/OpenButton'
 import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { FolderTableCell as FolderTableCell_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { FolderField as FolderField_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -43,6 +44,8 @@ import { default as default_1a7510af427896d367a49dbf838d2de6 } from '@/component
 import { default as default_8a7ab0eb7ab5c511aba12e68480bfe5e } from '@/components/BeforeLogin'
 import { BuildFeatureView as BuildFeatureView_d8605766f69e3b3a5478503a0fb7c2b3 } from '@/components/admin/BuildFeature'
 import { SiteCodeView as SiteCodeView_ab5c71a9bdf0ed783520b60856644bf7 } from '@/components/admin/SiteCode'
+import { StarterKitsView as StarterKitsView_69c9cd8519e0e378911dfb7f9939366c } from '@/components/admin/StarterKits'
+import { VisualBuilderView as VisualBuilderView_db60f75f7f67d7a2e3bb247b69a08d61 } from '@/components/admin/VisualBuilder'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -77,6 +80,7 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#MetaDescriptionComponent": MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/next/client#SlugField": SlugField_2b8867833a34864a02ddf429b0728a40,
+  "@/components/admin/VisualBuilder/OpenButton#OpenButton": OpenButton_f61215d70847fd4124c42182c8b819f5,
   "@payloadcms/richtext-lexical/client#BlocksFeatureClient": BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/next/rsc#FolderTableCell": FolderTableCell_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/next/rsc#FolderField": FolderField_f9c02e79a4aed9a3924487c0cd4cafb1,
@@ -92,5 +96,7 @@ export const importMap = {
   "@/components/BeforeLogin#default": default_8a7ab0eb7ab5c511aba12e68480bfe5e,
   "@/components/admin/BuildFeature#BuildFeatureView": BuildFeatureView_d8605766f69e3b3a5478503a0fb7c2b3,
   "@/components/admin/SiteCode#SiteCodeView": SiteCodeView_ab5c71a9bdf0ed783520b60856644bf7,
+  "@/components/admin/StarterKits#StarterKitsView": StarterKitsView_69c9cd8519e0e378911dfb7f9939366c,
+  "@/components/admin/VisualBuilder#VisualBuilderView": VisualBuilderView_db60f75f7f67d7a2e3bb247b69a08d61,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

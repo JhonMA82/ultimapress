@@ -75,6 +75,8 @@ export interface Config {
     tags: Tag;
     comments: Comment;
     users: User;
+    'section-templates': SectionTemplate;
+    'synced-sections': SyncedSection;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -100,6 +102,8 @@ export interface Config {
     tags: TagsSelect<false> | TagsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'section-templates': SectionTemplatesSelect<false> | SectionTemplatesSelect<true>;
+    'synced-sections': SyncedSectionsSelect<false> | SyncedSectionsSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -243,6 +247,7 @@ export interface Page {
     | FormBlock
     | EmbedBlock
     | ArchiveBlock
+    | LoopGridBlock
   )[];
   meta?: {
     title?: string | null;
@@ -491,6 +496,10 @@ export interface User {
   role: 'admin' | 'editor' | 'author';
   photo?: (number | null) | Media;
   bio?: string | null;
+  /**
+   * How your admin menu looks. Spine is the line with a point per section; Sidebar is the classic list down the left.
+   */
+  menuStyle?: ('spine' | 'sidebar') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -525,12 +534,30 @@ export interface DesignBlock {
    */
   css?: string | null;
   /**
+   * When set, this section shows the synced section, and changing it updates every page that uses it.
+   */
+  synced?: (number | null) | SyncedSection;
+  /**
    * Run edge to edge. Untick to keep it inside the page width.
    */
   fullWidth?: boolean | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'design';
+}
+/**
+ * Sections used on several pages. Edit one in the visual builder and every page updates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "synced-sections".
+ */
+export interface SyncedSection {
+  id: number;
+  name: string;
+  html: string;
+  css?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1060,6 +1087,26 @@ export interface ArchiveBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LoopGridBlock".
+ */
+export interface LoopGridBlock {
+  heading?: string | null;
+  /**
+   * Which content to show, for example posts or properties.
+   */
+  collection: string;
+  limit?: number | null;
+  /**
+   * Only for content with categories, such as posts.
+   */
+  showFilter?: boolean | null;
+  loadMore?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'loopGrid';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
  */
 export interface Comment {
@@ -1073,6 +1120,20 @@ export interface Comment {
   authorEmail: string;
   content: string;
   status: 'pending' | 'approved' | 'spam';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Sections you saved in the visual builder. They appear under Templates, My templates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "section-templates".
+ */
+export interface SectionTemplate {
+  id: number;
+  name: string;
+  html: string;
+  css?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1509,6 +1570,14 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'section-templates';
+        value: number | SectionTemplate;
+      } | null)
+    | ({
+        relationTo: 'synced-sections';
+        value: number | SyncedSection;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -1629,6 +1698,7 @@ export interface PagesSelect<T extends boolean = true> {
         formBlock?: T | FormBlockSelect<T>;
         embed?: T | EmbedBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
+        loopGrid?: T | LoopGridBlockSelect<T>;
       };
   meta?:
     | T
@@ -1651,6 +1721,7 @@ export interface PagesSelect<T extends boolean = true> {
 export interface DesignBlockSelect<T extends boolean = true> {
   html?: T;
   css?: T;
+  synced?: T;
   fullWidth?: T;
   id?: T;
   blockName?: T;
@@ -1895,6 +1966,19 @@ export interface ArchiveBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LoopGridBlock_select".
+ */
+export interface LoopGridBlockSelect<T extends boolean = true> {
+  heading?: T;
+  collection?: T;
+  limit?: T;
+  showFilter?: T;
+  loadMore?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
@@ -2077,6 +2161,7 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   photo?: T;
   bio?: T;
+  menuStyle?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2094,6 +2179,28 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "section-templates_select".
+ */
+export interface SectionTemplatesSelect<T extends boolean = true> {
+  name?: T;
+  html?: T;
+  css?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "synced-sections_select".
+ */
+export interface SyncedSectionsSelect<T extends boolean = true> {
+  name?: T;
+  html?: T;
+  css?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2622,6 +2729,12 @@ export interface Header {
      */
     url?: string | null;
   };
+  /**
+   * Open the visual builder from this screen to design your own header. Untick to go back to the standard one.
+   */
+  designed?: boolean | null;
+  designHtml?: string | null;
+  designCss?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2669,6 +2782,12 @@ export interface Footer {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Open the visual builder from this screen to design your own footer. Untick to go back to the standard one.
+   */
+  designed?: boolean | null;
+  designHtml?: string | null;
+  designCss?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2746,6 +2865,9 @@ export interface HeaderSelect<T extends boolean = true> {
         label?: T;
         url?: T;
       };
+  designed?: T;
+  designHtml?: T;
+  designCss?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -2781,6 +2903,9 @@ export interface FooterSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  designed?: T;
+  designHtml?: T;
+  designCss?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
