@@ -21,13 +21,24 @@ Payload reference: `.claude/skills/payload/SKILL.md`, then `.claude/skills/paylo
 | `src/importer/wordpress.ts` | WordPress (WXR) importer |
 | `src/endpoints/wordpressImport.ts` | `/api/wp-import` and `/api/site-export` |
 | `src/proxy.ts` | Site-wide redirects (including imported WordPress URLs) |
-| `src/plugins/index.ts` (mcpPlugin) | "Connect Claude": what Claude can read and change through a connection |
+| `src/plugins/index.ts` (mcpPlugin) | "Connect AI Client" (Claude, ChatGPT...): what a connected AI can read and change |
 | `src/mcp/tools.ts` | Extra tools for connected Claude (writePost, writePage, addImage) and its instructions |
 | `src/endpoints/siteRefresh.ts` | Refreshes the public site after every change connected Claude makes (all collections and globals) |
 | `src/endpoints/claudeConnect.ts` | One-click connection from the dashboard |
 | `src/components/admin/Spine/` | The Spine: the admin menu (replaces Payload's Nav) |
 | `src/components/admin/BuildFeature/` | The "Build a feature" admin page (`/admin/build-a-feature`) |
 | `src/components/admin/SiteCode/` | The "Site code" admin page (`/admin/site-code`): download the code, upload a new version, go back |
+| `src/components/admin/VisualBuilder/` | The visual builder (`/admin/visual-builder?page=<id>`, button on every page): drag and drop on designed sections. Its styles are saved after `/* up-visual-builder */` in a section's CSS (`src/utilities/builderCss.ts`) |
+| `src/components/Widgets/` | Builder widgets on the site: shared CSS (`styles.ts`) and the small script that runs sliders, tabs, popups, countdowns and more (`runtime.ts`), loaded only on pages that use them |
+| `src/collections/SyncedSections.ts`, `src/blocks/LoopGrid/` | Synced sections (one section on many pages) and the content grid block |
+| `src/components/admin/StarterKits/` | Starter kits (`/admin/starter-kits`): designed pages and a look in one click |
+| `src/components/Seo/`, `src/fields/seoExtras.ts`, `src/app/(frontend)/llms.txt/` | Structured data (business, website, article, breadcrumbs), per-page SEO fields and live SEO check, llms.txt |
+| `src/endpoints/visitors.ts`, `src/analytics/`, `src/components/Visitors/` | Built-in cookieless analytics (`/admin/analytics`), 404 log, cookie banner, optional GA4/GTM/Pixel/Plausible, code snippets, announcement bar |
+| `src/security/` | Two-factor login (TOTP), activity log plugin, Cloudflare Turnstile on forms and comments |
+| `src/globals/PrivateSettings.ts`, `src/email/adapter.ts` | Admin-only settings with secrets: SMTP (email follows these, logged in Email log), Turnstile keys, backup options |
+| `src/siteBackups/`, `src/endpoints/backups.ts` | Daily backups (database + media) on the data volume, optional S3-compatible copy, restore (`/admin/backups`) |
+| `src/components/admin/SiteHealth/`, `src/components/admin/PersonalData/` | Site health page and GDPR export/delete |
+| `src/instrumentation.ts` | On server start: runs queued jobs (scheduled publishing) every minute and the backup check every 10 minutes, through the site's own API |
 | `src/endpoints/siteCode.ts`, `src/siteCode/` | `/api/site-code/*`: admin only, password asked again for anything that changes the live site |
 | `docker/supervisor.mjs` | Runs the site in Docker and replaces its code safely (backup, build, check, switch, roll back) |
 | `scripts/ship.mjs` | `pnpm ship`: sends this folder to the owner's site, where it waits for their password |

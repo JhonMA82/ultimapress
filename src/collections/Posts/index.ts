@@ -1,3 +1,4 @@
+import { seoExtraFields } from '@/fields/seoExtras'
 import type { CollectionConfig } from 'payload'
 
 import {
@@ -192,6 +193,7 @@ export const Posts: CollectionConfig<'posts'> = {
               titlePath: 'meta.title',
               descriptionPath: 'meta.description',
             }),
+            ...seoExtraFields(),
           ],
         },
       ],

@@ -11,6 +11,8 @@ import { fileURLToPath } from 'url'
 import { anyone } from '../access/anyone'
 import { isAdminOrEditor, isAnyRole } from '../access/roles'
 
+const WEBP = { format: 'webp' as const, options: { quality: 80 } }
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
@@ -29,8 +31,9 @@ export const Media: CollectionConfig = {
   fields: [
     {
       name: 'alt',
+      label: 'Alt text',
       type: 'text',
-      //required: true,
+      admin: { description: 'Describe the image for blind visitors and for Google. Site health lists images without it.' },
     },
     {
       name: 'caption',
@@ -48,38 +51,18 @@ export const Media: CollectionConfig = {
     staticDir: process.env.MEDIA_DIR || path.resolve(dirname, '../../public/media'),
     adminThumbnail: 'thumbnail',
     focalPoint: true,
+    // Very large uploads are shrunk to 2560 px on the long side (photos straight from a
+    // phone or camera), and every smaller copy is saved as WebP, which loads much faster.
+    resizeOptions: { width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true },
     imageSizes: [
-      {
-        name: 'thumbnail',
-        width: 300,
-      },
-      {
-        name: 'square',
-        width: 500,
-        height: 500,
-      },
-      {
-        name: 'small',
-        width: 600,
-      },
-      {
-        name: 'medium',
-        width: 900,
-      },
-      {
-        name: 'large',
-        width: 1400,
-      },
-      {
-        name: 'xlarge',
-        width: 1920,
-      },
-      {
-        name: 'og',
-        width: 1200,
-        height: 630,
-        crop: 'center',
-      },
+      { name: 'thumbnail', width: 300, formatOptions: WEBP },
+      { name: 'square', width: 500, height: 500, formatOptions: WEBP },
+      { name: 'small', width: 600, formatOptions: WEBP },
+      { name: 'medium', width: 900, formatOptions: WEBP },
+      { name: 'large', width: 1400, formatOptions: WEBP },
+      { name: 'xlarge', width: 1920, formatOptions: WEBP },
+      // Social sharing image: JPEG, which every network accepts.
+      { name: 'og', width: 1200, height: 630, crop: 'center', formatOptions: { format: 'jpeg', options: { quality: 82 } } },
     ],
   },
 }

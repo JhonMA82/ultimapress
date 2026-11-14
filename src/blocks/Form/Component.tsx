@@ -10,6 +10,7 @@ import type { DefaultTypedEditorState } from '@payloadcms/richtext-lexical'
 
 import { fields } from './fields'
 import { getClientSideURL } from '@/utilities/getURL'
+import { Turnstile } from '@/components/Turnstile'
 
 export type FormBlockType = {
   blockName?: string
@@ -42,6 +43,8 @@ export const FormBlock: React.FC<
   } = formMethods
 
   const [isLoading, setIsLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileReset, setTurnstileReset] = useState(0)
   const [hasSubmitted, setHasSubmitted] = useState<boolean>()
   const [error, setError] = useState<{ message: string; status?: string } | undefined>()
   const router = useRouter()
@@ -67,6 +70,7 @@ export const FormBlock: React.FC<
             body: JSON.stringify({
               form: formID,
               submissionData: dataToSend,
+              turnstileToken,
             }),
             headers: {
               'Content-Type': 'application/json',
@@ -81,6 +85,7 @@ export const FormBlock: React.FC<
           if (req.status >= 400) {
             setIsLoading(false)
 
+            setTurnstileReset((n) => n + 1)
             setError({
               message: res.errors?.[0]?.message || 'Internal Server Error',
               status: res.status,
@@ -110,7 +115,7 @@ export const FormBlock: React.FC<
 
       void submitForm()
     },
-    [router, formID, redirect, confirmationType],
+    [router, formID, redirect, confirmationType, turnstileToken],
   )
 
   return (
@@ -161,6 +166,7 @@ export const FormBlock: React.FC<
                   })}
               </div>
 
+              <Turnstile onToken={setTurnstileToken} resetKey={turnstileReset} />
               <button className="up-btn up-form-submit" form={formID} type="submit">
                 {submitButtonLabel || 'Send'}
               </button>

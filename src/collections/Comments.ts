@@ -1,3 +1,4 @@
+import { checkTurnstile } from '../security/turnstile'
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 import { revalidatePath } from 'next/cache'
@@ -111,6 +112,8 @@ export const Comments: CollectionConfig = {
           data.status = 'spam'
           return data
         }
+
+        await checkTurnstile(req)
 
         if (!hasRole(req.user, 'admin', 'editor')) {
           data.status = settings.moderateComments === false ? 'approved' : 'pending'

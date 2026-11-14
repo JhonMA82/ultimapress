@@ -16,6 +16,10 @@ import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings, mediaURL, safeColor } from '@/utilities/getSiteSettings'
 import { MaintenancePage } from '@/components/MaintenancePage'
+import { Widgets } from '@/components/Widgets'
+import { WIDGET_CSS } from '@/components/Widgets/styles'
+import { SiteStructuredData } from '@/components/Seo'
+import { Announcement, Visitors } from '@/components/Visitors'
 
 import './globals.css'
 
@@ -74,7 +78,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `:root{--up-primary:${primary};--up-accent:${accent};--up-font-heading:'${headingFont}',ui-sans-serif,system-ui,sans-serif;--up-font-body:'${bodyFont}',ui-sans-serif,system-ui,sans-serif;}`,
           }}
         />
+        <style id="ultimapress-widgets" dangerouslySetInnerHTML={{ __html: WIDGET_CSS }} />
         {customCSS && <style id="ultimapress-custom-css" dangerouslySetInnerHTML={{ __html: customCSS }} />}
+        <SiteStructuredData settings={settings} />
       </head>
       <body>
         <Providers>
@@ -87,9 +93,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   preview: isEnabled,
                 }}
               />
+              <Announcement settings={settings} />
               <Header />
               {children}
               <Footer />
+              <Widgets />
+              <Visitors settings={settings} />
             </>
           )}
         </Providers>
@@ -111,6 +120,10 @@ export async function generateMetadata(): Promise<Metadata> {
     description: settings.tagline || undefined,
     openGraph: mergeOpenGraph({ siteName: siteTitle }),
     robots: settings.discourageSearchEngines ? { index: false, follow: false } : undefined,
+    verification: {
+      ...(settings.googleVerification ? { google: settings.googleVerification.trim() } : {}),
+      ...(settings.bingVerification ? { other: { 'msvalidate.01': settings.bingVerification.trim() } } : {}),
+    },
     alternates: settings.enableRSS ? { types: { 'application/rss+xml': '/feed.xml' } } : undefined,
     twitter: {
       card: 'summary_large_image',

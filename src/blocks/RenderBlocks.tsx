@@ -16,6 +16,7 @@ import { EmbedBlock } from '@/blocks/Embed/Component'
 import { SplitBlock } from '@/blocks/Split/Component'
 import { DesignBlock } from '@/blocks/Design/Component'
 import { StatsBlock } from '@/blocks/Stats/Component'
+import { LoopGridBlock } from '@/blocks/LoopGrid/Component'
 
 const blockComponents = {
   archive: ArchiveBlock,
@@ -32,6 +33,7 @@ const blockComponents = {
   split: SplitBlock,
   design: DesignBlock,
   stats: StatsBlock,
+  loopGrid: LoopGridBlock,
 }
 
 /** Some blocks sit on a full-width band so a long page has rhythm instead of one white column. */

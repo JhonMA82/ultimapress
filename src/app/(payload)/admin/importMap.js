@@ -27,15 +27,21 @@ import { MetaTitleComponent as MetaTitleComponent_a8a977ebc872c5d5ea7ee689724c08
 import { MetaImageComponent as MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { MetaDescriptionComponent as MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
+import { SeoCheck as SeoCheck_5de2e99ebbbd9ebd145dbbd185dc9d0a } from '@/components/admin/SeoCheck'
 import { SlugField as SlugField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
+import { OpenButton as OpenButton_f61215d70847fd4124c42182c8b819f5 } from '@/components/admin/VisualBuilder/OpenButton'
 import { BlocksFeatureClient as BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { FolderTableCell as FolderTableCell_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 import { FolderField as FolderField_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { TwoFactorSetup as TwoFactorSetup_88ac03fc2a6ab16591b31f53ee853a7e } from '@/components/admin/TwoFactor/Setup.client'
+import { NotFoundFix as NotFoundFix_2c84312c2d91efacce142c962691b349 } from '@/components/admin/NotFoundFix'
 import { LinkToDoc as LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { ReindexButton as ReindexButton_aead06e4cbf6b2620c5c51c9ab283634 } from '@payloadcms/plugin-search/client'
 import { FolderTypeField as FolderTypeField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
 import { RowLabel as RowLabel_ec255a65fa6fa8d1faeb09cf35284224 } from '@/Header/RowLabel'
 import { RowLabel as RowLabel_1f6ff6ff633e3695d348f4f3c58f1466 } from '@/Footer/RowLabel'
+import { SecretField as SecretField_15a790addfeffe484dd465108998359a } from '@/components/admin/SecretField'
+import { EmailTest as EmailTest_b1eddbb22326ec312bf6233ef5a76456 } from '@/components/admin/EmailTest'
 import { Spine as Spine_fc2f7e80d29b3b450f67c1253483187b } from '@/components/admin/Spine'
 import { default as default_534076e2c753ea5d539a54b05f456b1b } from '@/components/admin/Icon'
 import { default as default_a44df17d0fc3dcd873dae43dc3bf66bd } from '@/components/admin/Logo'
@@ -43,6 +49,12 @@ import { default as default_1a7510af427896d367a49dbf838d2de6 } from '@/component
 import { default as default_8a7ab0eb7ab5c511aba12e68480bfe5e } from '@/components/BeforeLogin'
 import { BuildFeatureView as BuildFeatureView_d8605766f69e3b3a5478503a0fb7c2b3 } from '@/components/admin/BuildFeature'
 import { SiteCodeView as SiteCodeView_ab5c71a9bdf0ed783520b60856644bf7 } from '@/components/admin/SiteCode'
+import { StarterKitsView as StarterKitsView_69c9cd8519e0e378911dfb7f9939366c } from '@/components/admin/StarterKits'
+import { PersonalDataView as PersonalDataView_e1c26f7ebb518e47e1ce775a8000a490 } from '@/components/admin/PersonalData'
+import { BackupsView as BackupsView_3fc868992e198698abbb84f1f5b7e9a2 } from '@/components/admin/Backups'
+import { SiteHealthView as SiteHealthView_d4e83effe407d4ac20444a24c223e7dd } from '@/components/admin/SiteHealth'
+import { AnalyticsView as AnalyticsView_8125a12f0fb1a035238912b1ee8c5989 } from '@/components/admin/Analytics'
+import { VisualBuilderView as VisualBuilderView_db60f75f7f67d7a2e3bb247b69a08d61 } from '@/components/admin/VisualBuilder'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -76,15 +88,21 @@ export const importMap = {
   "@payloadcms/plugin-seo/client#MetaImageComponent": MetaImageComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#MetaDescriptionComponent": MetaDescriptionComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
+  "@/components/admin/SeoCheck#SeoCheck": SeoCheck_5de2e99ebbbd9ebd145dbbd185dc9d0a,
   "@payloadcms/next/client#SlugField": SlugField_2b8867833a34864a02ddf429b0728a40,
+  "@/components/admin/VisualBuilder/OpenButton#OpenButton": OpenButton_f61215d70847fd4124c42182c8b819f5,
   "@payloadcms/richtext-lexical/client#BlocksFeatureClient": BlocksFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/next/rsc#FolderTableCell": FolderTableCell_f9c02e79a4aed9a3924487c0cd4cafb1,
   "@payloadcms/next/rsc#FolderField": FolderField_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@/components/admin/TwoFactor/Setup.client#TwoFactorSetup": TwoFactorSetup_88ac03fc2a6ab16591b31f53ee853a7e,
+  "@/components/admin/NotFoundFix#NotFoundFix": NotFoundFix_2c84312c2d91efacce142c962691b349,
   "@payloadcms/plugin-search/client#LinkToDoc": LinkToDoc_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/plugin-search/client#ReindexButton": ReindexButton_aead06e4cbf6b2620c5c51c9ab283634,
   "@payloadcms/next/client#FolderTypeField": FolderTypeField_2b8867833a34864a02ddf429b0728a40,
   "@/Header/RowLabel#RowLabel": RowLabel_ec255a65fa6fa8d1faeb09cf35284224,
   "@/Footer/RowLabel#RowLabel": RowLabel_1f6ff6ff633e3695d348f4f3c58f1466,
+  "@/components/admin/SecretField#SecretField": SecretField_15a790addfeffe484dd465108998359a,
+  "@/components/admin/EmailTest#EmailTest": EmailTest_b1eddbb22326ec312bf6233ef5a76456,
   "@/components/admin/Spine#Spine": Spine_fc2f7e80d29b3b450f67c1253483187b,
   "@/components/admin/Icon#default": default_534076e2c753ea5d539a54b05f456b1b,
   "@/components/admin/Logo#default": default_a44df17d0fc3dcd873dae43dc3bf66bd,
@@ -92,5 +110,11 @@ export const importMap = {
   "@/components/BeforeLogin#default": default_8a7ab0eb7ab5c511aba12e68480bfe5e,
   "@/components/admin/BuildFeature#BuildFeatureView": BuildFeatureView_d8605766f69e3b3a5478503a0fb7c2b3,
   "@/components/admin/SiteCode#SiteCodeView": SiteCodeView_ab5c71a9bdf0ed783520b60856644bf7,
+  "@/components/admin/StarterKits#StarterKitsView": StarterKitsView_69c9cd8519e0e378911dfb7f9939366c,
+  "@/components/admin/PersonalData#PersonalDataView": PersonalDataView_e1c26f7ebb518e47e1ce775a8000a490,
+  "@/components/admin/Backups#BackupsView": BackupsView_3fc868992e198698abbb84f1f5b7e9a2,
+  "@/components/admin/SiteHealth#SiteHealthView": SiteHealthView_d4e83effe407d4ac20444a24c223e7dd,
+  "@/components/admin/Analytics#AnalyticsView": AnalyticsView_8125a12f0fb1a035238912b1ee8c5989,
+  "@/components/admin/VisualBuilder#VisualBuilderView": VisualBuilderView_db60f75f7f67d7a2e3bb247b69a08d61,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

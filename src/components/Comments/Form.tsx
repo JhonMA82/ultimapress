@@ -2,12 +2,16 @@
 
 import React, { useState } from 'react'
 
+import { Turnstile } from '@/components/Turnstile'
+
 export const CommentForm: React.FC<{ postId: number | string; moderated: boolean }> = ({
   postId,
   moderated,
 }) => {
   const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
+  const [token, setToken] = useState('')
+  const [reset, setReset] = useState(0)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -23,6 +27,7 @@ export const CommentForm: React.FC<{ postId: number | string; moderated: boolean
           authorEmail: form.get('authorEmail'),
           content: form.get('content'),
           website: form.get('website'),
+          turnstileToken: token,
         }),
       })
       if (!res.ok) {
@@ -33,6 +38,7 @@ export const CommentForm: React.FC<{ postId: number | string; moderated: boolean
       if (!moderated) window.location.reload()
     } catch (err) {
       setError((err as Error).message)
+      setReset((n) => n + 1)
       setState('error')
     }
   }
@@ -76,6 +82,7 @@ export const CommentForm: React.FC<{ postId: number | string; moderated: boolean
         className="hidden"
         aria-hidden="true"
       />
+      <Turnstile onToken={setToken} resetKey={reset} />
       {state === 'error' && <p className="text-destructive">{error}</p>}
       <div>
         <button type="submit" className="up-btn" disabled={state === 'sending'}>

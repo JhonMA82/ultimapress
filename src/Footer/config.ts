@@ -1,5 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
+import { designedChromeFields } from '@/fields/designedChrome'
+
 import { link } from '@/fields/link'
 import { revalidateFooter } from './hooks/revalidateFooter'
 
@@ -8,6 +10,11 @@ export const Footer: GlobalConfig = {
   label: 'Footer Menu',
   admin: {
     group: 'Design',
+    components: {
+      elements: {
+        beforeDocumentControls: ['@/components/admin/VisualBuilder/OpenButton#OpenButton'],
+      },
+    },
   },
   access: {
     read: () => true,
@@ -68,6 +75,7 @@ export const Footer: GlobalConfig = {
         },
       ],
     },
+    ...designedChromeFields('footer'),
   ],
   hooks: {
     afterChange: [revalidateFooter],

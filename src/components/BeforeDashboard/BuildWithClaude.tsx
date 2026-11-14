@@ -50,7 +50,7 @@ function CopyField({ value, label }: { value: string; label: string }) {
 }
 
 /**
- * "Build with Claude": connect Claude to this site in one click (content and settings),
+ * "Build with AI": connect Claude, ChatGPT or another AI client to this site in one click (content and settings),
  * and the short path for building brand-new features with Claude Code.
  */
 export function BuildWithClaude({
@@ -87,8 +87,8 @@ export function BuildWithClaude({
           <Icon name="sparkles" />
         </span>
         <div>
-          <h2 className="up-dash__h">Build with Claude</h2>
-          <p>Connect Claude to this site, then just ask.</p>
+          <h2 className="up-dash__h">Build with AI</h2>
+          <p>Connect Claude, ChatGPT or another AI to this site, then just ask.</p>
         </div>
       </div>
 
@@ -118,7 +118,7 @@ export function BuildWithClaude({
           {!conn ? (
             <>
               <p className="up-claude__lead">
-                Claude writes pages and posts, edits your menus, changes your template and colours,
+                Your AI writes pages and posts, edits your menus, changes your template and colours,
                 and moderates comments, with the same permissions as your account.
               </p>
               <button
@@ -127,7 +127,7 @@ export function BuildWithClaude({
                 onClick={connect}
                 disabled={busy}
               >
-                <Icon name="plug" size={18} /> {busy ? 'Connecting…' : 'Connect Claude'}
+                <Icon name="plug" size={18} /> {busy ? 'Connecting…' : 'Connect AI Client'}
               </button>
               {connections > 0 && (
                 <p className="up-claude__note">
@@ -140,7 +140,7 @@ export function BuildWithClaude({
             <>
               {!conn.https && (
                 <p className="up-claude__warn">
-                  Claude can only reach your site over HTTPS. Set your domain first (DOMAIN in
+                  AI apps can only reach your site over HTTPS. Set your domain first (DOMAIN in
                   Docker Manager), then create the connection again.
                 </p>
               )}
@@ -151,10 +151,14 @@ export function BuildWithClaude({
                   <CopyField value={conn.url} label="connection address" />
                 </li>
                 <li>
-                  <strong>Add it to Claude</strong>
+                  <strong>Add it to your AI app</strong>
                   <small>
-                    In Claude, open <b>Settings → Connectors → Add custom connector</b>, name it
+                    <b>Claude:</b> open <b>Settings → Connectors → Add custom connector</b>, name it
                     &ldquo;UltimaPress&rdquo; and paste the address.
+                    <br />
+                    <b>ChatGPT:</b> turn on Developer mode, then open <b>Settings → Plugins → +</b>,
+                    name it &ldquo;UltimaPress&rdquo;, paste the address and set Authentication to
+                    <b> No authentication</b>.
                   </small>
                 </li>
                 <li>

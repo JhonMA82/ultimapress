@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { authenticated } from '../../access/authenticated'
 import { isAdmin, isAdminFieldLevel, isAdminOrSelf } from '../../access/roles'
+import { noLoginAfterReset, requireTwoFactor } from '../../security/twoFactor'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -22,7 +23,11 @@ export const Users: CollectionConfig = {
     useAsTitle: 'name',
     group: 'Settings',
   },
-  auth: true,
+  auth: {
+    // Five wrong passwords lock the account for 15 minutes.
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
   fields: [
     {
       name: 'name',
@@ -58,8 +63,50 @@ export const Users: CollectionConfig = {
       name: 'bio',
       type: 'textarea',
     },
+    {
+      name: 'menuStyle',
+      label: 'Menu style',
+      type: 'select',
+      defaultValue: 'spine',
+      options: [
+        { label: 'Spine', value: 'spine' },
+        { label: 'Sidebar', value: 'sidebar' },
+      ],
+      admin: {
+        position: 'sidebar',
+        isClearable: false,
+        description: 'How your admin menu looks. Spine is the line with a point per section; Sidebar is the classic list down the left.',
+      },
+    },
+    // Two-factor login: changed only through /api/up/2fa/*, never through a normal save.
+    {
+      name: 'twoFactorEnabled',
+      type: 'checkbox',
+      defaultValue: false,
+      access: { create: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    {
+      name: 'twoFactorSecret',
+      type: 'text',
+      hidden: true,
+      access: { read: () => false, create: () => false, update: () => false },
+    },
+    {
+      name: 'twoFactorPending',
+      type: 'text',
+      hidden: true,
+      access: { read: () => false, create: () => false, update: () => false },
+    },
+    {
+      name: 'twoFactor',
+      type: 'ui',
+      admin: { components: { Field: '@/components/admin/TwoFactor/Setup.client#TwoFactorSetup' } },
+    },
   ],
   hooks: {
+    beforeLogin: [requireTwoFactor],
+    afterOperation: [noLoginAfterReset],
     beforeChange: [
       // The first account ever created is the site administrator.
       async ({ data, operation, req }) => {

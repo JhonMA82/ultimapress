@@ -29,6 +29,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 
 ## Contents
 
+- [What's new in 1.1](#whats-new-in-11)
 - [What's included](#whats-included)
 - [Deploy in one click](#deploy-in-one-click)
 - [Install from the files (customised sites)](#install-from-the-files-customised-sites)
@@ -46,6 +47,46 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - [Local development](#local-development)
 - [Requirements](#requirements)
 - [Credits and licence](#credits-and-licence)
+
+## What's new in 1.1
+
+**Visual builder**
+- Drag-and-drop editing for every page, plus the header and footer, with Desktop, Tablet and Phone views, undo and redo, autosave and version history
+- More than 60 ready-designed sections and 14 whole-page templates, in your site's colours or in Bright and Dark versions
+- More than 40 elements, including sliders, tabs, toggles, popups, countdowns, counting numbers, before and after, lightbox galleries, video backgrounds, maps, star ratings, progress bars, comparison tables, share buttons, search, breadcrumbs and a table of contents
+- Entrance and hover effects on any element
+- Content grids for posts or any other content, with a category filter and Load more
+- Synced sections: edit once, every page updates
+- Save any section as a template to reuse on other pages
+- Turn a page hero into a fully designed section
+- Starter kits: a full set of designed pages and a look in one click
+
+**SEO and analytics**
+- Business, website, article and breadcrumb schema, plus llms.txt
+- Focus keyword per page with a live SEO check, social titles and descriptions, canonical links and hide from search
+- Google and Bing verification, and a 404 log with one-click redirects
+- Built-in analytics with no cookies, plus optional GA4, Tag Manager, Meta Pixel and Plausible
+
+**Privacy and security**
+- Cookie banner that holds back tracking until visitors accept
+- GDPR export and delete for any email address
+- Two-factor login, lockout after five wrong passwords, and an activity log
+- Cloudflare Turnstile spam protection on forms and comments
+
+**Running your site**
+- Daily backups of your database and media, with restore and download, and an optional off-site copy
+- Email set up from the admin, with a test button and an email log
+- Scheduled publishing
+- Large uploads resized, with lighter WebP copies
+- Site health page, code snippets and an announcement bar
+
+**AI**
+- Works with Claude, ChatGPT or any AI app that supports MCP connections (tested so far with Claude and ChatGPT): Build with AI, then Connect AI Client
+
+**Admin**
+- Choose your menu style: the Spine, or a classic sidebar that collapses
+
+**Updating from 1.0:** in Hostinger Docker Manager, click Update. Your content stays, and the database updates itself on start.
 
 ## What's included
 
@@ -113,7 +154,7 @@ including features Claude builds for you, follows the template automatically.
 
 Your website and its status, live counts (pages, posts, comments waiting for review, media,
 form entries), quick actions, recently edited content, a setup checklist with a progress
-bar, Build with Claude, the WordPress importer and a one-click export, right where you log
+bar, Build with AI, the WordPress importer and a one-click export, right where you log
 in.
 
 ### The Spine
@@ -259,11 +300,16 @@ Running the import twice is safe: anything that already exists is skipped.
 
 ## Build anything with Claude
 
-### Connect Claude to your site (no code)
+### Connect Claude or ChatGPT to your site (no code)
 
-On the dashboard, open **Build with Claude** and click **Connect Claude**. Copy the address
-it gives you, then in Claude go to **Settings > Connectors > Add custom connector** and paste
-it. Now just ask, in any chat:
+On the dashboard, open **Build with AI** and click **Connect AI Client**. Copy the address
+it gives you, then add it to your AI app:
+
+- **Claude:** go to **Settings > Connectors > Add custom connector** and paste it.
+- **ChatGPT:** turn on Developer mode, go to **Settings > Plugins > +**, paste it and set
+  Authentication to **No authentication** (the address already carries its own key).
+
+Now just ask, in any chat:
 
 - "Write a blog post about our new opening hours and save it as a draft."
 - "Add an FAQ section to the homepage with five questions customers ask."
@@ -271,8 +317,8 @@ it. Now just ask, in any chat:
 - "Approve all pending comments that aren't spam."
 
 The connection works with your permissions: an Author's connection can write posts but
-can't change pages or settings. Your site needs its domain with HTTPS for Claude to reach
-it. See or remove connections under **Settings > Claude connections**. Using Claude Code?
+can't change pages or settings. Your site needs its domain with HTTPS for your AI app to
+reach it. See or remove connections under **Settings > AI connections**. Using Claude Code?
 The same card gives you a one-line command instead.
 
 ### Add new features (Claude Code)

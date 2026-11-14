@@ -7,10 +7,28 @@ import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 import { CMSLink } from '@/components/Link'
 import { Logo } from '@/components/Logo/Logo'
 import { getSiteSettings, mediaURL } from '@/utilities/getSiteSettings'
+import { DesignedChrome } from '@/components/DesignedChrome'
+import { needsCookieBanner } from '@/components/Visitors'
+import { CookieSettingsLink } from '@/components/Visitors/Consent.client'
 
 export async function Footer() {
   const footerData = await getCachedGlobal('footer', 1)()
   const settings = await getSiteSettings()
+
+  const cookies = needsCookieBanner(settings)
+
+  if (footerData?.designed && footerData.designHtml) {
+    return (
+      <>
+        <DesignedChrome as="footer" html={footerData.designHtml} css={footerData.designCss} />
+        {cookies && (
+          <div className="container py-3 text-center text-xs opacity-70">
+            <CookieSettingsLink />
+          </div>
+        )}
+      </>
+    )
+  }
 
   const navItems = footerData?.navItems || []
   const social = footerData?.social || []
@@ -95,6 +113,7 @@ export async function Footer() {
             })}
             {privacy?.slug && <Link href={`/${privacy.slug}`}>Privacy Policy</Link>}
             {settings.enableRSS && <a href="/feed.xml">RSS</a>}
+            {cookies && <CookieSettingsLink className="text-left" />}
           </nav>
         </div>
       </div>

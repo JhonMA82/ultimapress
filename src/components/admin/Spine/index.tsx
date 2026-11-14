@@ -2,6 +2,7 @@ import type { Payload, SanitizedPermissions, TypedUser, VisibleEntities } from '
 import { EntityType, groupNavItems } from '@payloadcms/ui/shared'
 import React from 'react'
 
+import { SidebarClient } from './Sidebar.client'
 import { SpineClient } from './Spine.client'
 import {
   SPINE_GROUPS,
@@ -172,6 +173,20 @@ export async function Spine(props: Props) {
   }
 
   const u0 = (user ?? {}) as { role?: string }
+  if (u0.role === 'admin') {
+    panels.get('settings')!.sections.unshift({
+      key: 'site-care',
+      rows: [
+        { key: 'health', label: 'Site health', href: `${admin}/site-health`, meta: 'What needs fixing' },
+        { key: 'backups', label: 'Backups', href: `${admin}/backups`, meta: 'Daily, restore, download' },
+        { key: 'gdpr', label: 'Personal data requests', href: `${admin}/personal-data`, meta: 'GDPR export and delete' },
+      ],
+    })
+    grow.sections.unshift({
+      key: 'analytics',
+      rows: [{ key: 'analytics', label: 'Analytics', href: `${admin}/analytics`, meta: 'Visitors, pages, sources' }],
+    })
+  }
   // Built-in shortcuts that are not collections.
   panels.get('dashboard')!.sections.unshift({
     key: 'dash',
@@ -183,13 +198,16 @@ export async function Spine(props: Props) {
   if (permissions?.globals?.['site-settings']?.update) {
     panels.get('design')!.sections.unshift({
       key: 'site-design',
-      rows: [{ key: 'look', label: 'Template, colours and fonts', href: `${admin}/globals/site-settings`, meta: 'Site Settings' }],
+      rows: [
+        { key: 'look', label: 'Template, colours and fonts', href: `${admin}/globals/site-settings`, meta: 'Site Settings' },
+        { key: 'kits', label: 'Starter kits', href: `${admin}/starter-kits`, meta: 'Designed pages in one click' },
+      ],
     })
   }
   panels.get('build')!.sections.unshift({
     key: 'claude',
     rows: [
-      { key: 'bwc', label: 'Build with Claude', href: `${admin}#build-with-claude`, meta: 'Connect Claude' },
+      { key: 'bwc', label: 'Build with AI', href: `${admin}#build-with-claude`, meta: 'Connect AI Client' },
       { key: 'feature', label: 'Build a feature', href: `${admin}/build-a-feature`, meta: 'How it works' },
       ...(u0.role === 'admin'
         ? [{ key: 'code', label: 'Site code', href: `${admin}/site-code`, meta: 'Download, change, put live' }]
@@ -207,19 +225,19 @@ export async function Spine(props: Props) {
     }
   }
 
-  const u = (user ?? {}) as { name?: string; email?: string; role?: string }
-  return (
-    <SpineClient
-      admin={admin}
-      panels={[...panels.values()]}
-      user={{
-        name: u.name || u.email || 'You',
-        email: u.email || '',
-        role: u.role || '',
-        initial: (u.name || u.email || 'U').trim().charAt(0).toUpperCase(),
-      }}
-    />
-  )
+  const u = (user ?? {}) as { name?: string; email?: string; role?: string; menuStyle?: string }
+  const menuProps = {
+    admin,
+    panels: [...panels.values()],
+    user: {
+      name: u.name || u.email || 'You',
+      email: u.email || '',
+      role: u.role || '',
+      initial: (u.name || u.email || 'U').trim().charAt(0).toUpperCase(),
+    },
+  }
+  // Each person picks their menu under Account > Menu style.
+  return u.menuStyle === 'sidebar' ? <SidebarClient {...menuProps} /> : <SpineClient {...menuProps} />
 }
 
 export default Spine

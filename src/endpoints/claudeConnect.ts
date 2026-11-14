@@ -45,8 +45,8 @@ export const claudeConnectEndpoint: Endpoint = {
       req,
       data: {
         user: user.id,
-        label: `Claude (${created})`,
-        description: 'Created from Dashboard > Build with Claude',
+        label: `AI client (${created})`,
+        description: 'Created from Dashboard > Build with AI',
         enableAPIKey: true,
         apiKey: key,
         ...collectionOps,

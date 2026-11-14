@@ -19,6 +19,14 @@ export const defaultSiteSettings: Partial<SiteSetting> = {
   enableRSS: true,
   enableThemeSwitcher: false,
   maintenanceMode: false,
+  businessType: 'Organization',
+  enableLlmsTxt: true,
+  enableAnalytics: true,
+  analyticsRetentionDays: 395,
+  cookieBanner: 'auto',
+  announcementEnabled: false,
+  announcementStyle: 'brand',
+  announcementDismissible: true,
 }
 
 /**

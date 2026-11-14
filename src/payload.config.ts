@@ -1,6 +1,5 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import sharp from 'sharp'
-import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import path from 'path'
 import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
@@ -12,6 +11,21 @@ import { Posts } from './collections/Posts'
 import { Users } from './collections/Users'
 import { Tags } from './collections/Tags'
 import { Comments } from './collections/Comments'
+import { SectionTemplates } from './collections/SectionTemplates'
+import { SyncedSections } from './collections/SyncedSections'
+import { PageViews } from './collections/PageViews'
+import { NotFoundLog } from './collections/NotFoundLog'
+import { visitorEndpoints } from './endpoints/visitors'
+import { personalDataEndpoints } from './endpoints/personalData'
+import { ActivityLog } from './collections/ActivityLog'
+import { EmailLog } from './collections/EmailLog'
+import { PrivateSettings } from './globals/PrivateSettings'
+import { settingsEmailAdapter } from './email/adapter'
+import { emailTestEndpoint } from './endpoints/emailTest'
+import { backupEndpoints } from './endpoints/backups'
+import { twoFactorEndpoints } from './security/twoFactor'
+import { turnstileKeyEndpoint } from './security/turnstile'
+import { activityLogPlugin } from './security/activityLog'
 import { SiteSettings } from './globals/SiteSettings'
 import { siteExportEndpoint, wordpressImportEndpoint } from './endpoints/wordpressImport'
 import { claudeConnectEndpoint } from './endpoints/claudeConnect'
@@ -28,6 +42,8 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  // Admin wording: the account page's settings heading says "Preferences".
+  i18n: { translations: { en: { general: { payloadSettings: 'Preferences' } } } },
   admin: {
     // Built-in avatar icon: no calls to Gravatar.
     avatar: 'default',
@@ -62,6 +78,42 @@ export default buildConfig({
           Component: '@/components/admin/SiteCode#SiteCodeView',
           path: '/site-code',
           meta: { title: 'Site code', openGraph: { title: 'Site code' } },
+        },
+        // Starter kits: a set of designed pages and a look, created in one go
+        starterKits: {
+          Component: '@/components/admin/StarterKits#StarterKitsView',
+          path: '/starter-kits',
+          meta: { title: 'Starter kits', openGraph: { title: 'Starter kits' } },
+        },
+        // GDPR: export or delete what is stored about one person
+        personalData: {
+          Component: '@/components/admin/PersonalData#PersonalDataView',
+          path: '/personal-data',
+          meta: { title: 'Personal data requests', openGraph: { title: 'Personal data requests' } },
+        },
+        // Backups: daily backups, download, restore
+        backups: {
+          Component: '@/components/admin/Backups#BackupsView',
+          path: '/backups',
+          meta: { title: 'Backups', openGraph: { title: 'Backups' } },
+        },
+        // Site health: what needs fixing, on one page
+        siteHealth: {
+          Component: '@/components/admin/SiteHealth#SiteHealthView',
+          path: '/site-health',
+          meta: { title: 'Site health', openGraph: { title: 'Site health' } },
+        },
+        // Built-in analytics: visitors, pages, sources, devices, countries
+        analytics: {
+          Component: '@/components/admin/Analytics#AnalyticsView',
+          path: '/analytics',
+          meta: { title: 'Analytics', openGraph: { title: 'Analytics' } },
+        },
+        // The visual builder: a page full screen, drag and drop (opened from a page)
+        visualBuilder: {
+          Component: '@/components/admin/VisualBuilder#VisualBuilderView',
+          path: '/visual-builder',
+          meta: { title: 'Visual builder', openGraph: { title: 'Visual builder' } },
         },
       },
     },
@@ -101,40 +153,50 @@ export default buildConfig({
     // Database changes ship as migrations and run automatically when the site starts.
     prodMigrations: migrations,
   }),
-  collections: [Pages, Posts, Media, Categories, Tags, Comments, Users],
+  collections: [
+    Pages,
+    Posts,
+    Media,
+    Categories,
+    Tags,
+    Comments,
+    Users,
+    SectionTemplates,
+    SyncedSections,
+    PageViews,
+    NotFoundLog,
+    ActivityLog,
+    EmailLog,
+  ],
   cors: [getServerSideURL()].filter(Boolean),
-  globals: [SiteSettings, Header, Footer],
+  globals: [SiteSettings, Header, Footer, PrivateSettings],
   endpoints: [
     wordpressImportEndpoint,
     siteExportEndpoint,
     claudeConnectEndpoint,
     siteRefreshEndpoint,
     ...siteCodeEndpoints,
+    ...visitorEndpoints,
+    ...personalDataEndpoints,
+    ...twoFactorEndpoints,
+    ...backupEndpoints,
+    emailTestEndpoint,
+    turnstileKeyEndpoint,
   ],
   // Last, so it also covers collections that other plugins add.
-  plugins: [...plugins, refreshAfterClaude],
+  plugins: [...plugins, refreshAfterClaude, activityLogPlugin],
   secret: process.env.PAYLOAD_SECRET,
   sharp,
   // Email (password resets, form notifications). Set SMTP_* in .env to send real email;
   // without it, emails are written to the server log.
-  email: process.env.SMTP_HOST
-    ? nodemailerAdapter({
-        defaultFromAddress: process.env.SMTP_FROM_ADDRESS || 'no-reply@example.com',
-        defaultFromName: process.env.SMTP_FROM_NAME || 'UltimaPress',
-        transportOptions: {
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT || 587),
-          secure: Number(process.env.SMTP_PORT) === 465,
-          auth: process.env.SMTP_USER
-            ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-            : undefined,
-        },
-      })
-    : undefined,
+  // Email follows Settings > Email, backups and keys (then SMTP_* in .env, then the server log).
+  email: settingsEmailAdapter(),
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   jobs: {
+    // Queued jobs (such as pages and posts scheduled to publish) are run every minute
+    // from src/instrumentation.ts, through /api/payload-jobs/run.
     access: {
       run: ({ req }: { req: PayloadRequest }): boolean => {
         // Allow logged in users to execute this endpoint (default)

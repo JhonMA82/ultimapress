@@ -1,12 +1,15 @@
 /* The Spine: UltimaPress's admin menu. Colours come from the brand tokens in
    src/app/(payload)/custom.scss, so it works in Bright and Dark mode. */
 
-/* Payload's layout: a fixed 76px column for the Spine, no hamburger. */
+/* Payload's layout: a fixed column for the menu (76px Spine, wider Sidebar), no hamburger. */
 .template-default,
 .template-default.template-default--nav-open,
 .template-default.template-default--nav-hydrated,
 .template-default.template-default--nav-hydrated.template-default--nav-open {
-  grid-template-columns: 76px minmax(0, 1fr) !important;
+  grid-template-columns: var(--up-nav-w, 76px) minmax(0, 1fr) !important;
+}
+:root:has(.up-sidebar) {
+  --up-nav-w: 248px;
 }
 .template-default__nav-toggler-wrapper,
 .template-default__nav-overlay,

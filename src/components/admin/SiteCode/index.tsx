@@ -35,7 +35,7 @@ export function SiteCodeView({ initPageResult, params, searchParams }: AdminView
       <Gutter>
         <div className="up-build up-code">
           <header className="up-build__head">
-            <p className="up-build__eyebrow">Build with Claude</p>
+            <p className="up-build__eyebrow">Build with AI</p>
             <h1>Site code</h1>
             <p className="up-build__lead">
               Download your site&apos;s code, change it with Claude, and put it live from here. Your

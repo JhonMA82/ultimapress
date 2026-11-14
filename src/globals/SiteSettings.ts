@@ -1,7 +1,7 @@
 import type { GlobalConfig } from 'payload'
 import { revalidateTag } from 'next/cache'
 
-import { isAdmin } from '../access/roles'
+import { isAdmin, isAdminFieldLevel } from '../access/roles'
 
 export const FONT_OPTIONS = [
   'Inter',
@@ -213,14 +213,278 @@ export const SiteSettings: GlobalConfig = {
           ],
         },
         {
+          label: 'SEO',
+          description: 'How search engines and AI assistants see the site. Every page also has its own SEO tab.',
+          fields: [
+            {
+              name: 'businessType',
+              type: 'select',
+              defaultValue: 'Organization',
+              admin: {
+                description:
+                  'Used in the structured data (schema) on every page, together with the details in your footer: phone, email, address, hours and social links.',
+              },
+              options: [
+                { label: 'Organisation or brand', value: 'Organization' },
+                { label: 'Local business', value: 'LocalBusiness' },
+                { label: 'Professional service', value: 'ProfessionalService' },
+                { label: 'Shop', value: 'Store' },
+                { label: 'Restaurant or café', value: 'Restaurant' },
+                { label: 'Real estate agent', value: 'RealEstateAgent' },
+                { label: 'Health or beauty', value: 'HealthAndBeautyBusiness' },
+                { label: 'Home services (trades)', value: 'HomeAndConstructionBusiness' },
+                { label: 'Lodging (hotel, B&B)', value: 'LodgingBusiness' },
+                { label: 'Person (personal site)', value: 'Person' },
+              ],
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'businessName',
+                  type: 'text',
+                  admin: { width: '50%', description: 'Leave empty to use the site title.' },
+                },
+                {
+                  name: 'priceRange',
+                  type: 'text',
+                  admin: { width: '50%', description: 'Optional, for local businesses, e.g. €€ or €50-€500.' },
+                },
+              ],
+            },
+            {
+              name: 'defaultShareImage',
+              type: 'upload',
+              relationTo: 'media',
+              admin: { description: 'Shown when a page without its own image is shared on social media.' },
+            },
+            {
+              name: 'enableLlmsTxt',
+              label: 'Publish llms.txt for AI assistants',
+              type: 'checkbox',
+              defaultValue: true,
+              admin: {
+                description:
+                  'A plain summary of your pages and posts at /llms.txt that ChatGPT, Claude, Perplexity and other AI tools can read.',
+              },
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'googleVerification',
+                  label: 'Google Search Console code',
+                  type: 'text',
+                  admin: { width: '50%', description: 'Only the code from the HTML tag, e.g. abc123…' },
+                },
+                {
+                  name: 'bingVerification',
+                  label: 'Bing Webmaster code',
+                  type: 'text',
+                  admin: { width: '50%', description: 'Only the code from the HTML tag.' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          label: 'Analytics',
+          description:
+            'Visitor stats are built in: no cookies, no personal data, nothing sent to anyone else. See them under Grow > Analytics.',
+          fields: [
+            {
+              name: 'enableAnalytics',
+              label: 'Count visitors (built-in, no cookies)',
+              type: 'checkbox',
+              defaultValue: true,
+            },
+            {
+              name: 'analyticsRetentionDays',
+              label: 'Keep visitor stats for (days)',
+              type: 'number',
+              defaultValue: 395,
+              min: 30,
+              max: 1100,
+            },
+            {
+              type: 'collapsible',
+              label: 'Other analytics tools (optional)',
+              admin: {
+                description:
+                  'Google Analytics, Tag Manager and the Meta Pixel use cookies, so a cookie banner appears and they only load after a visitor accepts.',
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'ga4Id',
+                      label: 'Google Analytics 4 ID',
+                      type: 'text',
+                      validate: (v: string | null | undefined) =>
+                        !v || /^G-[A-Z0-9]{4,20}$/i.test(v.trim()) ? true : 'Looks like G-XXXXXXX',
+                      admin: { width: '50%' },
+                    },
+                    {
+                      name: 'gtmId',
+                      label: 'Google Tag Manager ID',
+                      type: 'text',
+                      validate: (v: string | null | undefined) =>
+                        !v || /^GTM-[A-Z0-9]{4,12}$/i.test(v.trim()) ? true : 'Looks like GTM-XXXXXX',
+                      admin: { width: '50%' },
+                    },
+                  ],
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'metaPixelId',
+                      label: 'Meta (Facebook) Pixel ID',
+                      type: 'text',
+                      validate: (v: string | null | undefined) =>
+                        !v || /^\d{6,20}$/.test(v.trim()) ? true : 'Numbers only',
+                      admin: { width: '50%' },
+                    },
+                    {
+                      name: 'plausibleDomain',
+                      label: 'Plausible domain',
+                      type: 'text',
+                      validate: (v: string | null | undefined) =>
+                        !v || /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v.trim()) ? true : 'Just the domain, e.g. example.com',
+                      admin: { width: '50%', description: 'No cookies, so no banner needed.' },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
           label: 'Privacy',
           fields: [
             {
               name: 'privacyPolicyPage',
               type: 'relationship',
               relationTo: 'pages',
-              admin: { description: 'Linked in the footer and on comment forms.' },
+              admin: { description: 'Linked in the footer, on comment forms and in the cookie banner.' },
             },
+            {
+              name: 'cookieBanner',
+              type: 'select',
+              defaultValue: 'auto',
+              options: [
+                { label: 'Automatic: only when a tool that uses cookies is switched on', value: 'auto' },
+                { label: 'Always show', value: 'always' },
+                { label: 'Never show', value: 'never' },
+              ],
+              admin: {
+                description:
+                  'Under GDPR, tools that set cookies (Google Analytics, Tag Manager, Meta Pixel, some code snippets) need consent first.',
+              },
+            },
+            {
+              name: 'cookieBannerText',
+              type: 'textarea',
+              defaultValue:
+                'We use cookies to understand how our site is used and to improve it. You can accept or decline; the site works either way.',
+            },
+          ],
+        },
+        {
+          label: 'Code',
+          description:
+            'Add code from other services (chat widgets, booking tools, verification tags) without editing the site. Administrators only.',
+          fields: [
+            {
+              name: 'codeSnippets',
+              type: 'array',
+              labels: { singular: 'Snippet', plural: 'Snippets' },
+              access: { create: isAdminFieldLevel, update: isAdminFieldLevel },
+              admin: { initCollapsed: true },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    { name: 'name', type: 'text', required: true, admin: { width: '40%' } },
+                    {
+                      name: 'location',
+                      type: 'select',
+                      defaultValue: 'head',
+                      required: true,
+                      options: [
+                        { label: 'In the <head>', value: 'head' },
+                        { label: 'Start of the page body', value: 'bodyStart' },
+                        { label: 'End of the page body', value: 'bodyEnd' },
+                      ],
+                      admin: { width: '30%' },
+                    },
+                    {
+                      name: 'enabled',
+                      type: 'checkbox',
+                      defaultValue: true,
+                      admin: { width: '15%', style: { alignSelf: 'flex-end' } },
+                    },
+                  ],
+                },
+                {
+                  name: 'code',
+                  type: 'code',
+                  required: true,
+                  admin: { language: 'html' },
+                },
+                {
+                  name: 'needsConsent',
+                  label: 'Only load after the visitor accepts cookies',
+                  type: 'checkbox',
+                  defaultValue: false,
+                  admin: { description: 'Tick this for anything that tracks visitors, like ad pixels.' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          label: 'Announcement',
+          description: 'A bar across the top of every page, for offers, news or closures.',
+          fields: [
+            { name: 'announcementEnabled', label: 'Show the announcement bar', type: 'checkbox', defaultValue: false },
+            { name: 'announcementText', type: 'text', label: 'Message' },
+            {
+              type: 'row',
+              fields: [
+                { name: 'announcementLinkLabel', type: 'text', label: 'Link text', admin: { width: '40%' } },
+                { name: 'announcementLinkURL', type: 'text', label: 'Link address', admin: { width: '60%' } },
+              ],
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'announcementStart',
+                  type: 'date',
+                  label: 'Show from',
+                  admin: { width: '50%', date: { pickerAppearance: 'dayAndTime' }, description: 'Optional' },
+                },
+                {
+                  name: 'announcementEnd',
+                  type: 'date',
+                  label: 'Hide after',
+                  admin: { width: '50%', date: { pickerAppearance: 'dayAndTime' }, description: 'Optional' },
+                },
+              ],
+            },
+            {
+              name: 'announcementStyle',
+              type: 'select',
+              defaultValue: 'brand',
+              options: [
+                { label: 'Brand colour', value: 'brand' },
+                { label: 'Dark', value: 'dark' },
+                { label: 'Light', value: 'light' },
+              ],
+            },
+            { name: 'announcementDismissible', label: 'Visitors can close it', type: 'checkbox', defaultValue: true },
           ],
         },
       ],

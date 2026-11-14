@@ -75,6 +75,12 @@ export interface Config {
     tags: Tag;
     comments: Comment;
     users: User;
+    'section-templates': SectionTemplate;
+    'synced-sections': SyncedSection;
+    'page-views': PageView;
+    'not-found-log': NotFoundLog;
+    'activity-log': ActivityLog;
+    'email-log': EmailLog;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -100,6 +106,12 @@ export interface Config {
     tags: TagsSelect<false> | TagsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'section-templates': SectionTemplatesSelect<false> | SectionTemplatesSelect<true>;
+    'synced-sections': SyncedSectionsSelect<false> | SyncedSectionsSelect<true>;
+    'page-views': PageViewsSelect<false> | PageViewsSelect<true>;
+    'not-found-log': NotFoundLogSelect<false> | NotFoundLogSelect<true>;
+    'activity-log': ActivityLogSelect<false> | ActivityLogSelect<true>;
+    'email-log': EmailLogSelect<false> | EmailLogSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
@@ -120,11 +132,13 @@ export interface Config {
     'site-settings': SiteSetting;
     header: Header;
     footer: Footer;
+    'private-settings': PrivateSetting;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     header: HeaderSelect<false> | HeaderSelect<true>;
     footer: FooterSelect<false> | FooterSelect<true>;
+    'private-settings': PrivateSettingsSelect<false> | PrivateSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -243,6 +257,7 @@ export interface Page {
     | FormBlock
     | EmbedBlock
     | ArchiveBlock
+    | LoopGridBlock
   )[];
   meta?: {
     title?: string | null;
@@ -251,6 +266,26 @@ export interface Page {
      */
     image?: (number | null) | Media;
     description?: string | null;
+    /**
+     * The search phrase this page should rank for. The check below uses it.
+     */
+    focusKeyword?: string | null;
+    /**
+     * For Facebook, LinkedIn, X and WhatsApp. Leave empty to use the SEO title.
+     */
+    ogTitle?: string | null;
+    /**
+     * Leave empty to use the meta description.
+     */
+    ogDescription?: string | null;
+    /**
+     * Only if this content also lives at another address. Leave empty in most cases.
+     */
+    canonicalURL?: string | null;
+    /**
+     * Search engines will not list this page, and it leaves the sitemap and llms.txt.
+     */
+    noindex?: boolean | null;
   };
   publishedAt?: string | null;
   /**
@@ -301,6 +336,26 @@ export interface Post {
      */
     image?: (number | null) | Media;
     description?: string | null;
+    /**
+     * The search phrase this page should rank for. The check below uses it.
+     */
+    focusKeyword?: string | null;
+    /**
+     * For Facebook, LinkedIn, X and WhatsApp. Leave empty to use the SEO title.
+     */
+    ogTitle?: string | null;
+    /**
+     * Leave empty to use the meta description.
+     */
+    ogDescription?: string | null;
+    /**
+     * Only if this content also lives at another address. Leave empty in most cases.
+     */
+    canonicalURL?: string | null;
+    /**
+     * Search engines will not list this page, and it leaves the sitemap and llms.txt.
+     */
+    noindex?: boolean | null;
   };
   publishedAt?: string | null;
   authors?: (number | User)[] | null;
@@ -325,6 +380,9 @@ export interface Post {
  */
 export interface Media {
   id: number;
+  /**
+   * Describe the image for blind visitors and for Google. Site health lists images without it.
+   */
   alt?: string | null;
   caption?: {
     root: {
@@ -491,6 +549,13 @@ export interface User {
   role: 'admin' | 'editor' | 'author';
   photo?: (number | null) | Media;
   bio?: string | null;
+  /**
+   * How your admin menu looks. Spine is the line with a point per section; Sidebar is the classic list down the left.
+   */
+  menuStyle?: ('spine' | 'sidebar') | null;
+  twoFactorEnabled?: boolean | null;
+  twoFactorSecret?: string | null;
+  twoFactorPending?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -525,12 +590,30 @@ export interface DesignBlock {
    */
   css?: string | null;
   /**
+   * When set, this section shows the synced section, and changing it updates every page that uses it.
+   */
+  synced?: (number | null) | SyncedSection;
+  /**
    * Run edge to edge. Untick to keep it inside the page width.
    */
   fullWidth?: boolean | null;
   id?: string | null;
   blockName?: string | null;
   blockType: 'design';
+}
+/**
+ * Sections used on several pages. Edit one in the visual builder and every page updates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "synced-sections".
+ */
+export interface SyncedSection {
+  id: number;
+  name: string;
+  html: string;
+  css?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1060,6 +1143,26 @@ export interface ArchiveBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LoopGridBlock".
+ */
+export interface LoopGridBlock {
+  heading?: string | null;
+  /**
+   * Which content to show, for example posts or properties.
+   */
+  collection: string;
+  limit?: number | null;
+  /**
+   * Only for content with categories, such as posts.
+   */
+  showFilter?: boolean | null;
+  loadMore?: boolean | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'loopGrid';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments".
  */
 export interface Comment {
@@ -1073,6 +1176,88 @@ export interface Comment {
   authorEmail: string;
   content: string;
   status: 'pending' | 'approved' | 'spam';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Sections you saved in the visual builder. They appear under Templates, My templates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "section-templates".
+ */
+export interface SectionTemplate {
+  id: number;
+  name: string;
+  html: string;
+  css?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-views".
+ */
+export interface PageView {
+  id: number;
+  day: string;
+  path: string;
+  referrer?: string | null;
+  device?: string | null;
+  browser?: string | null;
+  country?: string | null;
+  visitor?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Addresses visitors tried that do not exist on your site. Open one to send its visitors to the right page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "not-found-log".
+ */
+export interface NotFoundLog {
+  id: number;
+  path: string;
+  hits?: number | null;
+  lastSeen?: string | null;
+  lastReferrer?: string | null;
+  redirected?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Logins and changes from the last 180 days.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity-log".
+ */
+export interface ActivityLog {
+  id: number;
+  summary?: string | null;
+  who?: string | null;
+  user?: (number | null) | User;
+  action?: ('created' | 'updated' | 'deleted' | 'published' | 'logged in' | 'security') | null;
+  area?: string | null;
+  docId?: string | null;
+  /**
+   * Only for logins.
+   */
+  ip?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Emails the site sent in the last 90 days. Set up sending under Email, backups and keys.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-log".
+ */
+export interface EmailLog {
+  id: number;
+  subject?: string | null;
+  to?: string | null;
+  status?: ('sent' | 'failed' | 'logged') | null;
+  error?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1155,7 +1340,7 @@ export interface Search {
   createdAt: string;
 }
 /**
- * Each connection lets Claude work on this site as the person who created it. Delete one to disconnect it.
+ * Each connection lets an AI client (Claude, ChatGPT and others) work on this site as the person who created it. Delete one to disconnect it.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-mcp-api-keys".
@@ -1509,6 +1694,30 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'section-templates';
+        value: number | SectionTemplate;
+      } | null)
+    | ({
+        relationTo: 'synced-sections';
+        value: number | SyncedSection;
+      } | null)
+    | ({
+        relationTo: 'page-views';
+        value: number | PageView;
+      } | null)
+    | ({
+        relationTo: 'not-found-log';
+        value: number | NotFoundLog;
+      } | null)
+    | ({
+        relationTo: 'activity-log';
+        value: number | ActivityLog;
+      } | null)
+    | ({
+        relationTo: 'email-log';
+        value: number | EmailLog;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: number | Redirect;
       } | null)
@@ -1629,6 +1838,7 @@ export interface PagesSelect<T extends boolean = true> {
         formBlock?: T | FormBlockSelect<T>;
         embed?: T | EmbedBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
+        loopGrid?: T | LoopGridBlockSelect<T>;
       };
   meta?:
     | T
@@ -1636,6 +1846,11 @@ export interface PagesSelect<T extends boolean = true> {
         title?: T;
         image?: T;
         description?: T;
+        focusKeyword?: T;
+        ogTitle?: T;
+        ogDescription?: T;
+        canonicalURL?: T;
+        noindex?: T;
       };
   publishedAt?: T;
   generateSlug?: T;
@@ -1651,6 +1866,7 @@ export interface PagesSelect<T extends boolean = true> {
 export interface DesignBlockSelect<T extends boolean = true> {
   html?: T;
   css?: T;
+  synced?: T;
   fullWidth?: T;
   id?: T;
   blockName?: T;
@@ -1895,6 +2111,19 @@ export interface ArchiveBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "LoopGridBlock_select".
+ */
+export interface LoopGridBlockSelect<T extends boolean = true> {
+  heading?: T;
+  collection?: T;
+  limit?: T;
+  showFilter?: T;
+  loadMore?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
@@ -1913,6 +2142,11 @@ export interface PostsSelect<T extends boolean = true> {
         title?: T;
         image?: T;
         description?: T;
+        focusKeyword?: T;
+        ogTitle?: T;
+        ogDescription?: T;
+        canonicalURL?: T;
+        noindex?: T;
       };
   publishedAt?: T;
   authors?: T;
@@ -2077,6 +2311,10 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   photo?: T;
   bio?: T;
+  menuStyle?: T;
+  twoFactorEnabled?: T;
+  twoFactorSecret?: T;
+  twoFactorPending?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2094,6 +2332,83 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "section-templates_select".
+ */
+export interface SectionTemplatesSelect<T extends boolean = true> {
+  name?: T;
+  html?: T;
+  css?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "synced-sections_select".
+ */
+export interface SyncedSectionsSelect<T extends boolean = true> {
+  name?: T;
+  html?: T;
+  css?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-views_select".
+ */
+export interface PageViewsSelect<T extends boolean = true> {
+  day?: T;
+  path?: T;
+  referrer?: T;
+  device?: T;
+  browser?: T;
+  country?: T;
+  visitor?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "not-found-log_select".
+ */
+export interface NotFoundLogSelect<T extends boolean = true> {
+  path?: T;
+  hits?: T;
+  lastSeen?: T;
+  lastReferrer?: T;
+  redirected?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity-log_select".
+ */
+export interface ActivityLogSelect<T extends boolean = true> {
+  summary?: T;
+  who?: T;
+  user?: T;
+  action?: T;
+  area?: T;
+  docId?: T;
+  ip?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-log_select".
+ */
+export interface EmailLogSelect<T extends boolean = true> {
+  subject?: T;
+  to?: T;
+  status?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2560,9 +2875,91 @@ export interface SiteSetting {
   maintenanceMode?: boolean | null;
   maintenanceMessage?: string | null;
   /**
-   * Linked in the footer and on comment forms.
+   * Used in the structured data (schema) on every page, together with the details in your footer: phone, email, address, hours and social links.
+   */
+  businessType?:
+    | (
+        | 'Organization'
+        | 'LocalBusiness'
+        | 'ProfessionalService'
+        | 'Store'
+        | 'Restaurant'
+        | 'RealEstateAgent'
+        | 'HealthAndBeautyBusiness'
+        | 'HomeAndConstructionBusiness'
+        | 'LodgingBusiness'
+        | 'Person'
+      )
+    | null;
+  /**
+   * Leave empty to use the site title.
+   */
+  businessName?: string | null;
+  /**
+   * Optional, for local businesses, e.g. €€ or €50-€500.
+   */
+  priceRange?: string | null;
+  /**
+   * Shown when a page without its own image is shared on social media.
+   */
+  defaultShareImage?: (number | null) | Media;
+  /**
+   * A plain summary of your pages and posts at /llms.txt that ChatGPT, Claude, Perplexity and other AI tools can read.
+   */
+  enableLlmsTxt?: boolean | null;
+  /**
+   * Only the code from the HTML tag, e.g. abc123…
+   */
+  googleVerification?: string | null;
+  /**
+   * Only the code from the HTML tag.
+   */
+  bingVerification?: string | null;
+  enableAnalytics?: boolean | null;
+  analyticsRetentionDays?: number | null;
+  ga4Id?: string | null;
+  gtmId?: string | null;
+  metaPixelId?: string | null;
+  /**
+   * No cookies, so no banner needed.
+   */
+  plausibleDomain?: string | null;
+  /**
+   * Linked in the footer, on comment forms and in the cookie banner.
    */
   privacyPolicyPage?: (number | null) | Page;
+  /**
+   * Under GDPR, tools that set cookies (Google Analytics, Tag Manager, Meta Pixel, some code snippets) need consent first.
+   */
+  cookieBanner?: ('auto' | 'always' | 'never') | null;
+  cookieBannerText?: string | null;
+  codeSnippets?:
+    | {
+        name: string;
+        location: 'head' | 'bodyStart' | 'bodyEnd';
+        enabled?: boolean | null;
+        code: string;
+        /**
+         * Tick this for anything that tracks visitors, like ad pixels.
+         */
+        needsConsent?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  announcementEnabled?: boolean | null;
+  announcementText?: string | null;
+  announcementLinkLabel?: string | null;
+  announcementLinkURL?: string | null;
+  /**
+   * Optional
+   */
+  announcementStart?: string | null;
+  /**
+   * Optional
+   */
+  announcementEnd?: string | null;
+  announcementStyle?: ('brand' | 'dark' | 'light') | null;
+  announcementDismissible?: boolean | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2622,6 +3019,12 @@ export interface Header {
      */
     url?: string | null;
   };
+  /**
+   * Open the visual builder from this screen to design your own header. Untick to go back to the standard one.
+   */
+  designed?: boolean | null;
+  designHtml?: string | null;
+  designCss?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2669,6 +3072,43 @@ export interface Footer {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Open the visual builder from this screen to design your own footer. Untick to go back to the standard one.
+   */
+  designed?: boolean | null;
+  designHtml?: string | null;
+  designCss?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Passwords and keys stay on your server and are only visible to administrators.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "private-settings".
+ */
+export interface PrivateSetting {
+  id: number;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  smtpSecurity?: ('auto' | 'ssl' | 'starttls') | null;
+  smtpUser?: string | null;
+  smtpPass?: string | null;
+  fromAddress?: string | null;
+  fromName?: string | null;
+  turnstileSiteKey?: string | null;
+  turnstileSecret?: string | null;
+  backupsEnabled?: boolean | null;
+  backupHour?: number | null;
+  backupKeepDays?: number | null;
+  backupMedia?: boolean | null;
+  offsiteEnabled?: boolean | null;
+  s3Endpoint?: string | null;
+  s3Region?: string | null;
+  s3Bucket?: string | null;
+  s3AccessKey?: string | null;
+  s3SecretKey?: string | null;
+  s3Prefix?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -2702,7 +3142,40 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   enableThemeSwitcher?: T;
   maintenanceMode?: T;
   maintenanceMessage?: T;
+  businessType?: T;
+  businessName?: T;
+  priceRange?: T;
+  defaultShareImage?: T;
+  enableLlmsTxt?: T;
+  googleVerification?: T;
+  bingVerification?: T;
+  enableAnalytics?: T;
+  analyticsRetentionDays?: T;
+  ga4Id?: T;
+  gtmId?: T;
+  metaPixelId?: T;
+  plausibleDomain?: T;
   privacyPolicyPage?: T;
+  cookieBanner?: T;
+  cookieBannerText?: T;
+  codeSnippets?:
+    | T
+    | {
+        name?: T;
+        location?: T;
+        enabled?: T;
+        code?: T;
+        needsConsent?: T;
+        id?: T;
+      };
+  announcementEnabled?: T;
+  announcementText?: T;
+  announcementLinkLabel?: T;
+  announcementLinkURL?: T;
+  announcementStart?: T;
+  announcementEnd?: T;
+  announcementStyle?: T;
+  announcementDismissible?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -2746,6 +3219,9 @@ export interface HeaderSelect<T extends boolean = true> {
         label?: T;
         url?: T;
       };
+  designed?: T;
+  designHtml?: T;
+  designCss?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
@@ -2781,6 +3257,38 @@ export interface FooterSelect<T extends boolean = true> {
         url?: T;
         id?: T;
       };
+  designed?: T;
+  designHtml?: T;
+  designCss?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "private-settings_select".
+ */
+export interface PrivateSettingsSelect<T extends boolean = true> {
+  smtpHost?: T;
+  smtpPort?: T;
+  smtpSecurity?: T;
+  smtpUser?: T;
+  smtpPass?: T;
+  fromAddress?: T;
+  fromName?: T;
+  turnstileSiteKey?: T;
+  turnstileSecret?: T;
+  backupsEnabled?: T;
+  backupHour?: T;
+  backupKeepDays?: T;
+  backupMedia?: T;
+  offsiteEnabled?: T;
+  s3Endpoint?: T;
+  s3Region?: T;
+  s3Bucket?: T;
+  s3AccessKey?: T;
+  s3SecretKey?: T;
+  s3Prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

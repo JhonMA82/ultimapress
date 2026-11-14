@@ -1,3 +1,4 @@
+import { checkTurnstile } from '@/security/turnstile'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { redirectsPlugin } from '@payloadcms/plugin-redirects'
@@ -26,7 +27,7 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 }
 
 export const plugins: Plugin[] = [
-  // Lets Claude work on the site's content and settings (Dashboard > Build with Claude).
+  // Lets an AI client (Claude, ChatGPT...) work on the site's content and settings (Dashboard > Build with AI).
   // Each connection is an API key that acts as the user who created it, with that user's role.
   mcpPlugin({
     collections: {
@@ -80,12 +81,12 @@ export const plugins: Plugin[] = [
     },
     overrideApiKeyCollection: (collection) => ({
       ...collection,
-      labels: { singular: 'Claude connection', plural: 'Claude connections' },
+      labels: { singular: 'AI connection', plural: 'AI connections' },
       admin: {
         ...collection.admin,
         group: 'Build',
         description:
-          'Each connection lets Claude work on this site as the person who created it. Delete one to disconnect it.',
+          'Each connection lets an AI client (Claude, ChatGPT and others) work on this site as the person who created it. Delete one to disconnect it.',
       },
     }),
   }),
@@ -134,6 +135,14 @@ export const plugins: Plugin[] = [
     },
     formSubmissionOverrides: {
       admin: { group: 'Grow' },
+      hooks: {
+        beforeChange: [
+          async ({ data, operation, req }) => {
+            if (operation === 'create') await checkTurnstile(req)
+            return data
+          },
+        ],
+      },
     },
     formOverrides: {
       admin: { group: 'Grow' },

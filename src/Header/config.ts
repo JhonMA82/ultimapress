@@ -1,5 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
+import { designedChromeFields } from '@/fields/designedChrome'
+
 import { link } from '@/fields/link'
 import { revalidateHeader } from './hooks/revalidateHeader'
 
@@ -8,6 +10,11 @@ export const Header: GlobalConfig = {
   label: 'Header Menu',
   admin: {
     group: 'Design',
+    components: {
+      elements: {
+        beforeDocumentControls: ['@/components/admin/VisualBuilder/OpenButton#OpenButton'],
+      },
+    },
   },
   access: {
     read: () => true,
@@ -52,6 +59,7 @@ export const Header: GlobalConfig = {
         { name: 'url', type: 'text', admin: { description: 'e.g. /contact or /#book' } },
       ],
     },
+    ...designedChromeFields('header'),
   ],
   hooks: {
     afterChange: [revalidateHeader],

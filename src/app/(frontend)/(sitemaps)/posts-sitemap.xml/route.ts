@@ -20,6 +20,8 @@ const getPostsSitemap = unstable_cache(
         _status: {
           equals: 'published',
         },
+        // Pages hidden from search engines stay out of the sitemap.
+        'meta.noindex': { not_equals: true },
       },
       select: {
         slug: true,
