@@ -29,6 +29,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 
 ## Contents
 
+- [What's new in 1.1.2](#whats-new-in-112)
 - [What's new in 1.1](#whats-new-in-11)
 - [What's included](#whats-included)
 - [Deploy in one click](#deploy-in-one-click)
@@ -47,6 +48,18 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - [Local development](#local-development)
 - [Requirements](#requirements)
 - [Credits and licence](#credits-and-licence)
+
+## What's new in 1.1.2
+
+**Security check for every new feature**
+- Every new version of your site's code is checked for security problems before it goes live: actions anyone can use without logging in, content anyone can change, visitor input that reaches the database or the page unescaped, passwords and keys written into the code, and code run from text
+- A critical problem stops the update, and your site keeps running the current version
+- `pnpm ship` runs the same check first, so Claude fixes problems before anything is sent
+- New **Settings > Security** page: the result for your live site, a Check now button, and a Copy for Claude button with every problem, where it is and how to fix it
+- Your live site and its packages are also checked once a day, and the result shows in Site health
+- Claude's instructions (`CLAUDE.md`) now include security rules for every feature it builds
+- The installed UltimaPress version now shows on the dashboard and in Site health, with a notice when a newer version is released
+- Optional **Deep check** add-on (Settings > Security > Add-ons): one click downloads a second, more thorough scanner (Opengrep, with open security rules for JavaScript and TypeScript) to your server. It follows how data moves through the code and only reports what differs from the official UltimaPress. Free, off by default, about 160 MB
 
 ## What's new in 1.1
 

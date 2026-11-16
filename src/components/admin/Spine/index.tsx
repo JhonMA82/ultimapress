@@ -179,6 +179,7 @@ export async function Spine(props: Props) {
       rows: [
         { key: 'health', label: 'Site health', href: `${admin}/site-health`, meta: 'What needs fixing' },
         { key: 'backups', label: 'Backups', href: `${admin}/backups`, meta: 'Daily, restore, download' },
+        { key: 'security', label: 'Security', href: `${admin}/security`, meta: 'Code and package check' },
         { key: 'gdpr', label: 'Personal data requests', href: `${admin}/personal-data`, meta: 'GDPR export and delete' },
       ],
     })

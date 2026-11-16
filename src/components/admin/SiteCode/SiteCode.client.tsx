@@ -9,6 +9,11 @@ type Job = {
   state: 'running' | 'done' | 'failed'
   steps: Step[]
   error?: string
+  code?: string
+  security?: {
+    problems?: { title: string; file: string; line: number; code: string; fix: string }[]
+    forClaude?: string
+  }
   log?: string
   finishedAt?: string
 }
@@ -141,6 +146,8 @@ export function SiteCodeClient() {
         throw new Error(data.error || 'That did not work.')
       }
       if (ask.kind === 'key') setKey(data)
+      // An update started from this page: show how it ends, here, until the page is left.
+      else sawRunning.current = true
       setAsk(null)
       setPassword('')
       await load()
@@ -204,7 +211,8 @@ export function SiteCodeClient() {
         </section>
       )}
 
-      {job && job.state !== 'running' && !restarting && (
+      {/* The result only shows to whoever is watching the update; a refresh clears it. */}
+      {job && job.state !== 'running' && !restarting && sawRunning.current && (
         <section className={`up-build__card up-code__result is-${job.state}`} aria-live="polite">
           {job.state === 'done' ? (
             <>
@@ -224,6 +232,27 @@ export function SiteCodeClient() {
                 Your site is still running the version it had before. Nothing was lost.
               </p>
               <p className="up-code__error">{job.error}</p>
+              {job.code === 'security' && (job.security?.problems || []).length > 0 && (
+                <div className="up-code__problems">
+                  <ul>
+                    {(job.security?.problems || []).map((p, i) => (
+                      <li key={i}>
+                        <strong>{p.title}</strong>
+                        <span>
+                          {p.file}, line {p.line}
+                        </span>
+                        <code>{p.code}</code>
+                        <span>How to fix: {p.fix}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {job.security?.forClaude && (
+                    <button type="button" className="up-build__copy" onClick={() => copy(job.security?.forClaude || '', 'claude')}>
+                      {copied === 'claude' ? 'Copied' : 'Copy for Claude'}
+                    </button>
+                  )}
+                </div>
+              )}
               <details className="up-code__log">
                 <summary>What happened (show this to Claude)</summary>
                 <pre>{job.log}</pre>

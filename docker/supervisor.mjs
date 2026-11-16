@@ -18,11 +18,14 @@
  * Plain Node, no dependencies. The app talks to it on 127.0.0.1 only
  * (src/siteCode/supervisor.ts).
  */
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
+
+// The server's own copy of the security check, never the one inside uploaded code.
+import { deepBaseline, forClaude, scanSecurity } from './security-check.mjs'
 
 const APP_DIR = path.resolve(process.env.UP_APP_DIR || '/app')
 const DATA_DIR = path.resolve(process.env.UP_DATA_DIR || path.join(APP_DIR, 'data'))
@@ -33,6 +36,7 @@ const INCOMING = path.join(SC, 'incoming')
 const LOGS = path.join(SC, 'logs')
 const STATE_FILE = path.join(SC, 'state.json')
 const STATUS_FILE = path.join(SC, 'status.json')
+const SECURITY_FILE = path.join(SC, 'security.json') // last check of the live version
 
 const PORT = Number(process.env.PORT || 3000)
 const HOST = process.env.HOSTNAME || '0.0.0.0'
@@ -171,8 +175,9 @@ const startMain = (id) => {
 let job = null // { id, kind, steps, ... } mirrored to status.json
 const STEPS = {
   deploy: [
-    ['backup', 'Backing up your content'],
     ['unpack', 'Unpacking the new code'],
+    ['security', 'Checking security'],
+    ['backup', 'Backing up your content'],
     ['install', 'Installing what it needs'],
     ['build', 'Building the site'],
     ['check', 'Checking it starts'],
@@ -353,6 +358,157 @@ const switchTo = async (id, backTo) => {
   }
 }
 
+// ---------------------------------------------------------------- add-ons
+
+/**
+ * Deep check add-on: the Opengrep scanner, downloaded on request to the data volume so it
+ * survives image updates. Pinned version, checked against its SHA-256 before use.
+ */
+const DEEP_DIR = path.join(DATA_DIR, 'addons', 'deep-check')
+const DEEP_BIN = path.join(DEEP_DIR, 'opengrep')
+const DEEP_STATE = path.join(DEEP_DIR, 'state.json')
+const OPENGREP = {
+  version: 'v2.0.0',
+  x64: { file: 'opengrep_linux_x86', sha256: '37e93f4da5fd04a18c5c1febbdd12f7e98dfccd4d0c9cf2593bcb25eeb462da0' },
+  arm64: { file: 'opengrep_linux_aarch64', sha256: '6257b65423a744b704af2ff9beeb8f222c2f6925236af386b56b031d4c06d6d8' },
+}
+let deepInstall = null // { state: 'installing' | 'failed', error? }
+
+const deepState = () => {
+  const s = readJSON(DEEP_STATE, null)
+  const installed = Boolean(s?.enabled) && fs.existsSync(DEEP_BIN)
+  return {
+    id: 'deep-check',
+    available: Boolean(OPENGREP[process.arch]),
+    enabled: installed,
+    version: installed ? s.version : null,
+    installedAt: installed ? s.installedAt : null,
+    installing: deepInstall?.state === 'installing',
+    error: deepInstall?.state === 'failed' ? deepInstall.error : null,
+  }
+}
+const deepOptions = async () => {
+  if (!deepState().enabled) return null
+  // What the deep check reports on the official code is not repeated for custom versions.
+  const key = `${OPENGREP.version}:${readJSON(path.join(APP_DIR, 'package.json'), {}).version || ''}`
+  const file = path.join(DEEP_DIR, 'baseline.json')
+  let saved = readJSON(file, null)
+  if (saved?.key !== key) {
+    saved = { key, fingerprints: await deepBaseline(APP_DIR, DEEP_BIN) }
+    writeJSON(file, saved)
+  }
+  return { bin: DEEP_BIN, baseline: saved.fingerprints }
+}
+
+const download = async (url, file) => {
+  const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15 * 60_000) })
+  if (!res.ok || !res.body) throw new Error(`The download failed (${res.status}).`)
+  const hash = crypto.createHash('sha256')
+  const out = fs.createWriteStream(file, { mode: 0o755 })
+  for await (const chunk of res.body) {
+    hash.update(chunk)
+    if (!out.write(chunk)) await new Promise((r) => out.once('drain', r))
+  }
+  await new Promise((r, j) => out.end((e) => (e ? j(e) : r())))
+  return hash.digest('hex')
+}
+
+const installDeep = async () => {
+  const asset = OPENGREP[process.arch]
+  if (!asset) throw new Error('The Deep check is not available for this type of server.')
+  fs.mkdirSync(DEEP_DIR, { recursive: true })
+  const tmp = `${DEEP_BIN}.download`
+  try {
+    const sha = await download(`https://github.com/opengrep/opengrep/releases/download/${OPENGREP.version}/${asset.file}`, tmp)
+    if (sha !== asset.sha256) throw new Error('The downloaded scanner did not match its checksum, so it was not installed.')
+    fs.renameSync(tmp, DEEP_BIN)
+    fs.chmodSync(DEEP_BIN, 0o755)
+    const test = spawnSync(DEEP_BIN, ['--version'], { timeout: 60_000 })
+    if (test.status !== 0) throw new Error('The scanner was downloaded but does not run on this server.')
+  } catch (e) {
+    fs.rmSync(tmp, { force: true })
+    fs.rmSync(DEEP_BIN, { force: true })
+    throw e
+  }
+  writeJSON(DEEP_STATE, { enabled: true, version: OPENGREP.version, installedAt: new Date().toISOString() })
+  log('deep check installed')
+}
+
+const setDeep = (enabled) => {
+  if (enabled) {
+    if (deepInstall?.state === 'installing' || deepState().enabled) return deepState()
+    deepInstall = { state: 'installing' }
+    installDeep()
+      .then(() => {
+        deepInstall = null
+        return checkLive()
+      })
+      .catch((e) => {
+        deepInstall = { state: 'failed', error: e.message }
+        log(`deep check install failed: ${e.message}`)
+      })
+  } else {
+    if (deepInstall?.state === 'installing') {
+      const e = new Error('The Deep check is still being installed. Try again in a minute.')
+      e.code = 'busy'
+      throw e
+    }
+    deepInstall = null
+    fs.rmSync(DEEP_DIR, { recursive: true, force: true })
+    log('deep check removed')
+  }
+  return deepState()
+}
+
+// ---------------------------------------------------------------- security check
+
+/** Stops an update whose code has a critical security problem. */
+const securityGate = async (id, dir) => {
+  const deep = await deepOptions().catch(() => null)
+  const result = await scanSecurity(dir, { packages: false, deep })
+  const summary = `Security check: ${result.critical.length} critical, ${result.warnings.length} warnings, ${result.markedSafe.length} marked safe.\n`
+  appendLog(`\n${summary}`)
+  if (result.deep && !result.deep.ran) appendLog(`  Deep check skipped: ${result.deep.error}\n`)
+  for (const f of result.critical) appendLog(`  CRITICAL ${f.file}:${f.line}  ${f.title}\n`)
+  for (const f of result.warnings) appendLog(`  warning  ${f.file}:${f.line}  ${f.title}\n`)
+  job.security = {
+    ok: result.ok,
+    critical: result.critical.length,
+    warnings: result.warnings.length,
+    markedSafe: result.markedSafe.length,
+  }
+  if (!result.ok) {
+    // Shown on the Site code page with this update only (not kept anywhere else).
+    job.security.problems = result.critical.map(({ title, file, line, code, fix }) => ({ title, file, line, code, fix }))
+    job.security.forClaude = forClaude(result)
+    const n = result.critical.length
+    const e = new Error(
+      `The security check found ${n} critical problem${n === 1 ? '' : 's'} in this version, so it was not put live. ` +
+        'They are listed below: copy them for Claude to fix, then send the update again.',
+    )
+    e.code = 'security'
+    throw e
+  }
+}
+
+let checking = null
+/** Checks the live version's code and packages; saved for Settings > Security. */
+const checkLive = () => {
+  checking ??= (async () => {
+    try {
+      const dir = releaseDir(state.active || null)
+      const deep = await deepOptions().catch(() => null)
+      const result = await scanSecurity(dir, { deep })
+      const saved = { ...result, version: state.active || 'official', forClaude: forClaude(result) }
+      writeJSON(SECURITY_FILE, saved)
+      return saved
+    } finally {
+      checking = null
+    }
+  })()
+  return checking
+}
+
 const deploy = async ({ id, file, by, note }) => {
   const from = state.active || null
   const fromDir = releaseDir(from)
@@ -361,12 +517,15 @@ const deploy = async ({ id, file, by, note }) => {
   let candidate = null
   let migrated = false
   try {
-    setStep('backup')
-    backup = await plain(backupDatabase(id), 'Your content could not be backed up, so nothing was changed.')
-
     setStep('unpack')
     await plain(unpack(file, dir), 'The file could not be opened. Send a zip of your site folder.')
     migrated = migrationsOf(dir) !== migrationsOf(fromDir)
+
+    setStep('security')
+    await securityGate(id, dir)
+
+    setStep('backup')
+    backup = await plain(backupDatabase(id), 'Your content could not be backed up, so nothing was changed.')
 
     setStep('install')
     await plain(install(dir, fromDir), 'The packages the new code needs could not be installed.')
@@ -393,6 +552,7 @@ const deploy = async ({ id, file, by, note }) => {
     state.active = id
     record({ action: 'deploy', id, by, ok: true })
     cleanReleases()
+    checkLive().catch(() => {})
   } catch (e) {
     const started = Boolean(candidate?.dbTouched) || job.step === 'switch'
     await stopProcess(candidate)
@@ -507,10 +667,21 @@ http
     if (req.headers['x-up-token'] !== TOKEN) return send(401, { error: 'Not allowed.' })
     try {
       if (req.method === 'GET' && req.url === '/status') return send(200, publicState())
+      if (req.method === 'GET' && req.url === '/security')
+        return send(200, { live: readJSON(SECURITY_FILE, null), refused: null })
       let raw = ''
       for await (const chunk of req) raw += chunk
       const body = raw ? JSON.parse(raw) : {}
       const id = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15)
+      if (req.method === 'GET' && req.url === '/addons') return send(200, { addons: [deepState()] })
+      if (req.method === 'POST' && req.url === '/addons') {
+        if (body.id !== 'deep-check') return send(400, { error: 'Unknown add-on.' })
+        return send(200, { addons: [setDeep(Boolean(body.enabled))] })
+      }
+      if (req.method === 'POST' && req.url === '/security') {
+        await checkLive()
+        return send(200, { live: readJSON(SECURITY_FILE, null), refused: null })
+      }
       if (req.method === 'POST' && req.url === '/deploy') {
         const file = path.resolve(String(body.file || ''))
         if (!file.startsWith(INCOMING + path.sep) || !fs.existsSync(file)) return send(400, { error: 'No upload found.' })
@@ -552,6 +723,12 @@ if (state.active && !isBuilt(releaseDir(state.active))) {
 for (const f of fs.readdirSync(RELEASES)) if (f.endsWith('.unpack')) fs.rmSync(path.join(RELEASES, f), { recursive: true, force: true })
 
 startMain(state.active || null)
+// Older versions kept the last refused update on the Security page; that is no longer shown.
+fs.rmSync(path.join(SC, 'security-refused.json'), { force: true })
+
+// Security check of the live version: 5 minutes after start, then once a day.
+setTimeout(() => checkLive().catch((e) => log(`security check failed: ${e.message}`)), 5 * 60_000).unref()
+setInterval(() => checkLive().catch((e) => log(`security check failed: ${e.message}`)), 24 * 3600_000).unref()
 
 const shutdown = async () => {
   shuttingDown = true

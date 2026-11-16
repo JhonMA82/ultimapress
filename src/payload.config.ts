@@ -23,6 +23,7 @@ import { PrivateSettings } from './globals/PrivateSettings'
 import { settingsEmailAdapter } from './email/adapter'
 import { emailTestEndpoint } from './endpoints/emailTest'
 import { backupEndpoints } from './endpoints/backups'
+import { securityEndpoints } from './endpoints/security'
 import { twoFactorEndpoints } from './security/twoFactor'
 import { turnstileKeyEndpoint } from './security/turnstile'
 import { activityLogPlugin } from './security/activityLog'
@@ -96,6 +97,12 @@ export default buildConfig({
           Component: '@/components/admin/Backups#BackupsView',
           path: '/backups',
           meta: { title: 'Backups', openGraph: { title: 'Backups' } },
+        },
+        // Security: the security check of the site's code and packages
+        security: {
+          Component: '@/components/admin/Security#SecurityView',
+          path: '/security',
+          meta: { title: 'Security', openGraph: { title: 'Security' } },
         },
         // Site health: what needs fixing, on one page
         siteHealth: {
@@ -180,6 +187,7 @@ export default buildConfig({
     ...personalDataEndpoints,
     ...twoFactorEndpoints,
     ...backupEndpoints,
+    ...securityEndpoints,
     emailTestEndpoint,
     turnstileKeyEndpoint,
   ],

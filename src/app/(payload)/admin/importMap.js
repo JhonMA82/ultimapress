@@ -52,6 +52,7 @@ import { SiteCodeView as SiteCodeView_ab5c71a9bdf0ed783520b60856644bf7 } from '@
 import { StarterKitsView as StarterKitsView_69c9cd8519e0e378911dfb7f9939366c } from '@/components/admin/StarterKits'
 import { PersonalDataView as PersonalDataView_e1c26f7ebb518e47e1ce775a8000a490 } from '@/components/admin/PersonalData'
 import { BackupsView as BackupsView_3fc868992e198698abbb84f1f5b7e9a2 } from '@/components/admin/Backups'
+import { SecurityView as SecurityView_7b150c3643d9d999daa9a1b5a6c7f58d } from '@/components/admin/Security'
 import { SiteHealthView as SiteHealthView_d4e83effe407d4ac20444a24c223e7dd } from '@/components/admin/SiteHealth'
 import { AnalyticsView as AnalyticsView_8125a12f0fb1a035238912b1ee8c5989 } from '@/components/admin/Analytics'
 import { VisualBuilderView as VisualBuilderView_db60f75f7f67d7a2e3bb247b69a08d61 } from '@/components/admin/VisualBuilder'
@@ -113,6 +114,7 @@ export const importMap = {
   "@/components/admin/StarterKits#StarterKitsView": StarterKitsView_69c9cd8519e0e378911dfb7f9939366c,
   "@/components/admin/PersonalData#PersonalDataView": PersonalDataView_e1c26f7ebb518e47e1ce775a8000a490,
   "@/components/admin/Backups#BackupsView": BackupsView_3fc868992e198698abbb84f1f5b7e9a2,
+  "@/components/admin/Security#SecurityView": SecurityView_7b150c3643d9d999daa9a1b5a6c7f58d,
   "@/components/admin/SiteHealth#SiteHealthView": SiteHealthView_d4e83effe407d4ac20444a24c223e7dd,
   "@/components/admin/Analytics#AnalyticsView": AnalyticsView_8125a12f0fb1a035238912b1ee8c5989,
   "@/components/admin/VisualBuilder#VisualBuilderView": VisualBuilderView_db60f75f7f67d7a2e3bb247b69a08d61,

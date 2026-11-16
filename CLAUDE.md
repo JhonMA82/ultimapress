@@ -39,6 +39,7 @@ Payload reference: `.claude/skills/payload/SKILL.md`, then `.claude/skills/paylo
 | `src/siteBackups/`, `src/endpoints/backups.ts` | Daily backups (database + media) on the data volume, optional S3-compatible copy, restore (`/admin/backups`) |
 | `src/components/admin/SiteHealth/`, `src/components/admin/PersonalData/` | Site health page and GDPR export/delete |
 | `src/instrumentation.ts` | On server start: runs queued jobs (scheduled publishing) every minute and the backup check every 10 minutes, through the site's own API |
+| `docker/security-check.mjs`, `src/endpoints/security.ts`, `src/components/admin/Security/` | The security check: runs before `pnpm ship`, on the server before every update (critical problems stop it going live), daily, and from Settings > Security. The optional Deep check add-on (Opengrep with `docker/deep-check-rules.yaml`) is installed and run by `docker/supervisor.mjs` |
 | `src/endpoints/siteCode.ts`, `src/siteCode/` | `/api/site-code/*`: admin only, password asked again for anything that changes the live site |
 | `docker/supervisor.mjs` | Runs the site in Docker and replaces its code safely (backup, build, check, switch, roll back) |
 | `scripts/ship.mjs` | `pnpm ship`: sends this folder to the owner's site, where it waits for their password |
@@ -86,12 +87,42 @@ Payload reference: `.claude/skills/payload/SKILL.md`, then `.claude/skills/paylo
    `src/endpoints/claudeConnect.ts`, then generate types and a migration. A new tool in
    `src/mcp/tools.ts` also needs switching on in `claudeConnect.ts`, plus types and a migration.
 
+## Security (read before writing any feature)
+
+The site checks every new version with `docker/security-check.mjs`. A critical problem stops
+the update from going live, so write features that pass it, and that are actually safe:
+
+- **Never trust visitor input.** Validate type and length on the server. Escape anything shown
+  as HTML (React does this for normal text; never put visitor input in `dangerouslySetInnerHTML`
+  without `cleanDesignHtml` or another sanitizer).
+- **Database:** use Payload's `find`, `create`, `update`, `delete`. Never build SQL by joining
+  text; `sql.raw` only for fixed names, never for values.
+- **Every endpoint checks who is calling** at the top of its handler (`req.user` and `hasRole`),
+  and returns 403 otherwise. Public endpoints (visitor forms, bookings) need Turnstile or the
+  honeypot, rate limits and validation.
+- **Access rules:** `update` and `delete` are never open to everyone. Public `create` is only for
+  visitor submissions, with spam protection.
+- **Secrets** (API keys, passwords, tokens) go in Private Settings or environment variables, are
+  read on the server only, and are never written into the code or named `NEXT_PUBLIC_...`.
+- **No** `eval`, `new Function`, or shell commands built from text. Use `execFile` with fixed
+  arguments. Never switch off certificate checks.
+- **Uploads:** keep Payload's default file-type restrictions; never set `allowRestrictedFileTypes`.
+- **Random secrets** come from `crypto.randomBytes` or `crypto.randomUUID`, never `Math.random`.
+
+Code that is safe for a reason the check cannot see may say so on the line, or the line above,
+with `// up-security: <the real reason>`. Owners see every reason on the Security page, so only
+use it when it is true, never to get past the check.
+
+Before shipping, review your own changes as an attacker would: who can call this, what happens
+with malicious input, what does it expose to someone not logged in. Then run
+`node docker/security-check.mjs` and fix every critical problem and warning it reports.
+
 ## Putting changes live
 
 When the owner says "put it live" (or "ship it", "publish my changes"):
 
-1. Run `npx tsc --noEmit` and fix anything it reports. A version that does not build is
-   refused by the site, so check first.
+1. Run `npx tsc --noEmit` and `node docker/security-check.mjs`, and fix anything they report.
+   A version that does not build, or has a critical security problem, is refused by the site.
 2. Run `pnpm ship` (or `node scripts/ship.mjs`). It packs this folder and sends it to their
    site. If it says no site is set up, ask the owner to open **Build > Site code** in their
    admin, create a deploy key and give you the line it shows, then run that line.
@@ -135,6 +166,7 @@ pnpm generate:types      # after any schema change
 pnpm payload migrate:create <name>
 pnpm generate:importmap  # after adding admin components
 npx tsc --noEmit         # type check
+node docker/security-check.mjs  # security check (also runs in pnpm ship and on the server)
 pnpm ship                # send this folder to the owner's site (they confirm in Site code)
 ./update.sh               # on the server (sites installed from the files): back up, then rebuild
 ```

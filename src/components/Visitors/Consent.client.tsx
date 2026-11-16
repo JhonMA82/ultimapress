@@ -30,6 +30,7 @@ const read = (): 'yes' | 'no' | null => {
 function inject(html: string, where: 'head' | 'bodyStart' | 'bodyEnd', id: string) {
   if (document.querySelector(`[data-up-snippet="${id}"]`)) return
   const tpl = document.createElement('template')
+  // up-security: the owner's own code snippets from Settings, which only administrators can edit
   tpl.innerHTML = html
   const target = where === 'head' ? document.head : document.body
   const nodes = Array.from(tpl.content.childNodes)

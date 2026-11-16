@@ -29,13 +29,16 @@ export async function analyticsReport(payload: Payload, days: number): Promise<R
 
   const rows = async (q: unknown) => (await db.execute(q)).rows
 
-  const group = async (column: 'path' | 'referrer' | 'device' | 'browser' | 'country', limit = 10): Promise<Row[]> =>
-    (
+  const group = async (column: 'path' | 'referrer' | 'device' | 'browser' | 'country', limit = 10): Promise<Row[]> => {
+    // up-security: column can only be one of the five fixed names in its type, never visitor input
+    const col = sql.raw(`"${column}"`)
+    return (
       await rows(sql`
-        select coalesce(${sql.raw(`"${column}"`)}, '') as label, count(*) as views, count(distinct visitor) as visitors
+        select coalesce(${col}, '') as label, count(*) as views, count(distinct visitor) as visitors
         from page_views where day >= ${since}
         group by 1 order by 3 desc, 2 desc limit ${limit}`)
     ).map((r) => ({ label: String(r.label), views: n(r.views), visitors: n(r.visitors) }))
+  }
 
   const [totals, previous, live, daily, pages, sources, devices, browsers, countries] = await Promise.all([
     rows(sql`select count(*) as views, count(distinct visitor || day) as visitors from page_views where day >= ${since}`),

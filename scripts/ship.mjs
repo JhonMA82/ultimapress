@@ -7,13 +7,15 @@
  *   After that:  pnpm ship
  *
  * The update then waits in your admin: open Site code and confirm it with your
- * password. Nothing goes live before that. Plain Node, no packages needed.
+ * password. Nothing goes live before that. A security check runs first
+ * (docker/security-check.mjs) and stops here if it finds a critical problem.
+ * Plain Node, no packages needed.
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const configFile = path.join(root, '.ultimapress-deploy.json')
@@ -40,6 +42,19 @@ if (!site || !key) {
 if (arg('site') || arg('key')) {
   fs.writeFileSync(configFile, JSON.stringify({ site, key }, null, 2))
   console.log('Saved your site and deploy key in .ultimapress-deploy.json (keep that file private).')
+}
+
+// Security check first: the site runs the same check and refuses critical problems,
+// so they are reported here, where Claude can fix them before anything is sent.
+{
+  const { scanSecurity, report } = await import(pathToFileURL(path.join(root, 'docker', 'security-check.mjs')).href)
+  console.log('Checking security…')
+  const result = await scanSecurity(root)
+  console.log(report(result))
+  if (!result.ok) {
+    console.error('\nNot sent: fix the critical problems above, then run pnpm ship again.')
+    process.exit(1)
+  }
 }
 
 // Top-level names that never leave this computer. (Filtered here rather than with

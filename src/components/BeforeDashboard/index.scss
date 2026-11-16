@@ -215,6 +215,14 @@
       color: #ffc21f;
       background: rgba(255, 194, 31, 0.14);
     }
+    &.is-version {
+      color: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.1);
+      text-decoration: none;
+      &:hover {
+        background: rgba(255, 255, 255, 0.16);
+      }
+    }
   }
 
   /* Stats as glass tiles inside the hero */

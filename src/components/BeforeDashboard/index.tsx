@@ -6,6 +6,7 @@ import { SeedButton } from './SeedButton'
 import { WordPressImporter } from './WordPressImporter'
 import { BuildWithClaude } from './BuildWithClaude'
 import { getServerSideURL } from '@/utilities/getURL'
+import { availableUpdate, RELEASES_URL, upVersion } from '@/utilities/version'
 import './index.scss'
 
 const b = 'up-dash'
@@ -91,6 +92,8 @@ const BeforeDashboard = async ({ payload, user }: ServerProps) => {
   const site = getServerSideURL()
   const host = site.replace(/^https?:\/\//, '')
   const live = !settings.maintenanceMode
+  const version = upVersion()
+  const update = isAdmin ? await availableUpdate() : null
 
   const steps = [
     {
@@ -197,6 +200,16 @@ const BeforeDashboard = async ({ payload, user }: ServerProps) => {
               <span className={`${b}__badge ${live ? 'is-live' : 'is-off'}`}>
                 <i /> {live ? 'Live' : 'Maintenance mode'}
               </span>
+              {version && (
+                <a className={`${b}__badge is-version`} href={RELEASES_URL} target="_blank" rel="noreferrer" title="The UltimaPress version installed on this site">
+                  UltimaPress {version}
+                </a>
+              )}
+              {update && (
+                <a className={`${b}__badge is-off`} href={RELEASES_URL} target="_blank" rel="noreferrer">
+                  {update} available
+                </a>
+              )}
               <a href={site} target="_blank" rel="noreferrer">
                 {host}
               </a>

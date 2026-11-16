@@ -7,6 +7,8 @@ import type { AdminViewServerProps, Payload } from 'payload'
 import React from 'react'
 
 import { hasRole } from '@/access/roles'
+import { securityState } from '@/endpoints/security'
+import { availableUpdate, RELEASES_URL, upVersion } from '@/utilities/version'
 import { backupDir, listBackups } from '@/siteBackups'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -20,31 +22,6 @@ const count = async (payload: Payload, collection: string, where: Record<string,
   } catch {
     return 0
   }
-}
-
-/** The newest UltimaPress release on GitHub, checked at most every six hours. */
-let release: { at: number; tag: string | null } | null = null
-async function latestRelease() {
-  if (release && Date.now() - release.at < 6 * 3_600_000) return release.tag
-  let tag: string | null = null
-  try {
-    const r = await fetch('https://api.github.com/repos/mrwebtv/ultimapress/releases/latest', {
-      headers: { Accept: 'application/vnd.github+json' },
-      signal: AbortSignal.timeout(5000),
-    })
-    if (r.ok) tag = ((await r.json()) as { tag_name?: string }).tag_name || null
-  } catch {
-    /* offline or rate limited */
-  }
-  release = { at: Date.now(), tag }
-  return tag
-}
-
-const newer = (a: string, b: string) => {
-  const pa = a.replace(/^v/, '').split('.').map(Number)
-  const pb = b.replace(/^v/, '').split('.').map(Number)
-  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0)
-  return false
 }
 
 async function runChecks(payload: Payload, admin: string): Promise<Check[]> {
@@ -126,6 +103,26 @@ async function runChecks(payload: Payload, admin: string): Promise<Check[]> {
     checks.push({ status: 'warn', title: 'No spam protection on forms', detail: 'Add free Cloudflare Turnstile keys to block bots.', href: `${admin}/globals/private-settings`, action: 'Add keys' })
   }
 
+  // Security check of the site's code (Settings > Security)
+  try {
+    const sec = await securityState()
+    const live = sec.live
+    if (!live) {
+      checks.push({ status: 'warn', title: 'The security check has not run yet', detail: 'It runs a few minutes after the site starts, or check now.', href: `${admin}/security`, action: 'Check now' })
+    } else if (live.critical.length) {
+      checks.push({ status: 'bad', title: `${live.critical.length} critical security problem(s) in the code`, detail: 'Copy them for Claude and ask it to fix them.', href: `${admin}/security`, action: 'See problems' })
+    } else if (live.warnings.length) {
+      checks.push({ status: 'warn', title: `${live.warnings.length} security warning(s) in the code`, detail: 'They do not block updates, but are worth fixing.', href: `${admin}/security`, action: 'See warnings' })
+    } else {
+      checks.push({ status: 'good', title: 'The security check passed', detail: 'No problems found in your site’s code.' })
+    }
+    if (live?.packages.counts && live.packages.counts.critical > 0) {
+      checks.push({ status: 'warn', title: `${live.packages.counts.critical} package(s) with a critical known vulnerability`, detail: 'Update UltimaPress, or ask Claude to update the packages.', href: `${admin}/security`, action: 'See packages' })
+    }
+  } catch {
+    /* the check is not available here */
+  }
+
   // Content
   const broken = await count(payload, 'not-found-log', { and: [{ redirected: { not_equals: true } }, { hits: { greater_than: 1 } }] })
   if (broken) {
@@ -142,18 +139,13 @@ async function runChecks(payload: Payload, admin: string): Promise<Check[]> {
     checks.push({ status: 'warn', title: `${noDesc} published page(s) without a meta description`, detail: 'Google then picks text itself, often badly.', href: `${admin}/collections/pages`, action: 'Open pages' })
   }
 
-  // Updates
-  let current = ''
-  try {
-    current = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8')).version || ''
-  } catch {
-    /* unknown version */
-  }
-  const latest = await latestRelease()
-  if (latest && current && newer(latest, current)) {
-    checks.push({ status: 'warn', title: `UltimaPress ${latest.replace(/^v/, '')} is available`, detail: `You have ${current}.`, href: 'https://github.com/mrwebtv/ultimapress/releases', action: 'See what is new' })
-  } else if (latest) {
-    checks.push({ status: 'good', title: 'UltimaPress is up to date', detail: current ? `Version ${current}.` : '' })
+  // Version and updates
+  const current = upVersion()
+  const update = await availableUpdate()
+  if (update) {
+    checks.push({ status: 'warn', title: `UltimaPress ${update} is available`, detail: `You have version ${current}.`, href: RELEASES_URL, action: 'See what is new' })
+  } else {
+    checks.push({ status: 'good', title: current ? `UltimaPress ${current}` : 'UltimaPress', detail: 'The version installed on this site. No newer release found.', href: RELEASES_URL, action: 'Releases' })
   }
 
   return checks

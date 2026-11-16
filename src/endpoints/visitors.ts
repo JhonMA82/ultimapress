@@ -166,6 +166,7 @@ export const visitorEndpoints: Endpoint[] = [
     }),
   },
   {
+    // up-security: public on purpose, visitors' browsers report missing pages; rate limited, bots ignored, only a cleaned path is stored
     path: '/up/404',
     method: 'post',
     handler: quiet(async (req) => {

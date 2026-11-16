@@ -23,6 +23,10 @@ export type LibraryBlock = {
 
 export type Mode = 'bright' | 'dark'
 
+/** Escapes text placed inside the HTML of a template. */
+const esc = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
 const icon = (d: string, size = 28) =>
   `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`
 
@@ -493,7 +497,7 @@ const SECTIONS: Section[] = [
             .map(([n, r, q]) =>
               card(
                 p,
-                `<div style="display:flex;gap:2px;margin-bottom:14px;">${star.repeat(5)}</div><p style="margin:0 0 20px;font-size:17px;line-height:1.65;">${q}</p><div style="display:flex;align-items:center;gap:12px;"><span style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:${PRIMARY};color:#fff;font-weight:700;">${n[0]}</span><div><strong>${n}</strong><div style="font-size:14px;color:${p.muted};">${r.replace('&', '&amp;')}</div></div></div>`,
+                `<div style="display:flex;gap:2px;margin-bottom:14px;">${star.repeat(5)}</div><p style="margin:0 0 20px;font-size:17px;line-height:1.65;">${q}</p><div style="display:flex;align-items:center;gap:12px;"><span style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:${PRIMARY};color:#fff;font-weight:700;">${n[0]}</span><div><strong>${n}</strong><div style="font-size:14px;color:${p.muted};">${esc(r)}</div></div></div>`,
               ),
             )
             .join(''),
