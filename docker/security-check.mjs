@@ -486,7 +486,7 @@ export async function deepCheck(dir, { bin, baseline = [] }) {
  * { ok, scannedAt, critical: Finding[], warnings: Finding[], markedSafe: Finding[], files, packages, deep }
  * `deep`: { bin, baseline } runs the Deep check add-on too.
  */
-export async function scanSecurity(dir, { packages = true, deep = null } = {}) {
+export async function scanSecurity(dir, { packages = true, deep = null, official = null } = {}) {
   const root = path.resolve(dir)
   const files = walk(path.join(root, 'src'))
   const critical = []
@@ -526,7 +526,21 @@ export async function scanSecurity(dir, { packages = true, deep = null } = {}) {
       }
     }
   }
-  const pkgs = packages ? await checkPackages(root) : { checked: false, reason: 'Skipped.' }
+  let pkgs = packages ? await checkPackages(root) : { checked: false, reason: 'Skipped.' }
+  // Known issues in UltimaPress's own packages are fixed by UltimaPress updates, not by the
+  // owner: only keep the ones that come from packages added or changed for this site.
+  if (pkgs.checked && official) {
+    const same = path.resolve(official) === root
+    const base = same ? pkgs : await checkPackages(official)
+    const known = new Set((base.items || []).map((i) => `${i.package}|${i.title}`))
+    const items = same ? [] : (pkgs.items || []).filter((i) => !known.has(`${i.package}|${i.title}`))
+    const count = (sev) => items.filter((i) => i.severity === sev).length
+    pkgs = {
+      checked: true,
+      counts: { critical: count('critical'), high: count('high'), moderate: count('moderate'), low: count('low') },
+      items,
+    }
+  }
   let deepResult = null
   if (deep?.bin) {
     try {
@@ -537,6 +551,15 @@ export async function scanSecurity(dir, { packages = true, deep = null } = {}) {
     } catch (e) {
       deepResult = { ran: false, error: e.message }
     }
+  }
+  // Lines the official UltimaPress marks safe are not the owner's concern: only list the ones
+  // in code that was added or changed for this site.
+  let ownSafe = safe
+  if (official && path.resolve(official) !== root) {
+    const known = new Set((await scanSecurity(official, { packages: false })).markedSafe.map((f) => `${f.rule}|${f.file}|${f.code}`))
+    ownSafe = safe.filter((f) => !known.has(`${f.rule}|${f.file}|${f.code}`))
+  } else if (official) {
+    ownSafe = [] // this is the official code itself
   }
   return {
     ok: critical.length === 0,
@@ -551,7 +574,7 @@ export async function scanSecurity(dir, { packages = true, deep = null } = {}) {
     files: files.length,
     critical,
     warnings,
-    markedSafe: safe,
+    markedSafe: ownSafe,
     packages: pkgs,
   }
 }

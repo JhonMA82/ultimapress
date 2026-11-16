@@ -3,7 +3,7 @@
 import { useConfig, useDocumentInfo } from '@payloadcms/ui'
 import React from 'react'
 
-/** "Visual builder" button next to Save/Publish on a page, the header and the footer. */
+/** "Switch to visual builder" next to Save/Publish on a page; "Visual builder" on the header and the footer. */
 export function OpenButton() {
   const { id, globalSlug } = useDocumentInfo()
   const { config } = useConfig()
@@ -13,7 +13,7 @@ export function OpenButton() {
       ? `global=${globalSlug}`
       : null
     : id
-      ? `page=${encodeURIComponent(String(id))}`
+      ? `page=${encodeURIComponent(String(id))}&editor=visual`
       : null
   if (!target) return null
   return (
@@ -23,7 +23,7 @@ export function OpenButton() {
       style={{ marginRight: 8, textDecoration: 'none' }}
       title="Edit visually: drag and drop, click to edit, style anything"
     >
-      Visual builder
+      {globalSlug ? 'Visual builder' : 'Switch to visual builder'}
     </a>
   )
 }

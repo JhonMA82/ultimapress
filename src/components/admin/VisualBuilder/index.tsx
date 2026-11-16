@@ -61,6 +61,8 @@ export async function VisualBuilderView({ initPageResult, searchParams }: AdminV
   )
 
   if (!hasRole(req.user, 'admin', 'editor')) {
+    // Authors use the classic editor (pages open in the visual builder by default).
+    if (pageId) redirect(`${admin}/collections/pages/${encodeURIComponent(pageId)}?editor=classic`)
     return message('The visual builder is for administrators and editors.')
   }
 
@@ -101,6 +103,8 @@ export async function VisualBuilderView({ initPageResult, searchParams }: AdminV
         .catch(() => null)) as unknown as Record<string, unknown> | null
     }
     if (!page) return message('That page could not be found.')
+    // A brand new page needs its title and address first: that is done in the classic editor.
+    if (!versionId && (!page.title || !page.slug)) redirect(`${admin}/collections/pages/${encodeURIComponent(pageId)}?editor=new`)
   }
 
   // Synced sections: shown with their shared content.

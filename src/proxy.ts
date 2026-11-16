@@ -51,14 +51,36 @@ async function loadRedirects(): Promise<Map<string, { to: string; status: number
 }
 
 const THEME_COOKIE = 'payload-theme'
+/** Which page editor the person last chose: the visual builder (default) or the classic editor. */
+const EDITOR_COOKIE = 'up-editor'
+const PAGE_EDIT = /^\/admin\/collections\/pages\/([A-Za-z0-9_-]+)\/?$/
+const YEAR = 60 * 60 * 24 * 365
 
 export async function proxy(request: NextRequest) {
-  // Admin: dark mode is the default until the owner picks Bright in the menu.
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    if (request.cookies.has(THEME_COOKIE)) return NextResponse.next()
-    request.cookies.set(THEME_COOKIE, 'dark')
-    const res = NextResponse.next({ request: { headers: request.headers } })
-    res.cookies.set(THEME_COOKIE, 'dark', { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
+  const { pathname, searchParams } = request.nextUrl
+  if (pathname.startsWith('/admin')) {
+    const cookies: { name: string; value: string }[] = []
+    // Dark mode is the default until the owner picks Bright in the menu.
+    if (!request.cookies.has(THEME_COOKIE)) {
+      request.cookies.set(THEME_COOKIE, 'dark')
+      cookies.push({ name: THEME_COOKIE, value: 'dark' })
+    }
+
+    // Pages open in the visual builder, unless the person switched to the classic editor.
+    const choice = searchParams.get('editor')
+    if (choice === 'classic' || choice === 'visual') cookies.push({ name: EDITOR_COOKIE, value: choice })
+    const edit = PAGE_EDIT.exec(pathname)
+    // editor=new: a brand new page, shown in the classic editor once without changing the choice.
+    const classic = choice ? choice !== 'visual' : request.cookies.get(EDITOR_COOKIE)?.value === 'classic'
+    let res: NextResponse
+    if (edit && edit[1] !== 'create' && !classic) {
+      const to = new URL(`/admin/visual-builder`, request.url)
+      to.searchParams.set('page', edit[1])
+      res = NextResponse.redirect(to, 307)
+    } else {
+      res = NextResponse.next({ request: { headers: request.headers } })
+    }
+    for (const c of cookies) res.cookies.set(c.name, c.value, { path: '/', maxAge: YEAR, sameSite: 'lax' })
     return res
   }
 

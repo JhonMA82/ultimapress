@@ -23,9 +23,11 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // The server's own copy of the security check, never the one inside uploaded code.
 import { deepBaseline, forClaude, scanSecurity } from './security-check.mjs'
+import { createSiteScan } from './site-scan.mjs'
 
 const APP_DIR = path.resolve(process.env.UP_APP_DIR || '/app')
 const DATA_DIR = path.resolve(process.env.UP_DATA_DIR || path.join(APP_DIR, 'data'))
@@ -400,18 +402,17 @@ const deepOptions = async () => {
   return { bin: DEEP_BIN, baseline: saved.fingerprints }
 }
 
-const download = async (url, file) => {
-  const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15 * 60_000) })
-  if (!res.ok || !res.body) throw new Error(`The download failed (${res.status}).`)
-  const hash = crypto.createHash('sha256')
-  const out = fs.createWriteStream(file, { mode: 0o755 })
-  for await (const chunk of res.body) {
-    hash.update(chunk)
-    if (!out.write(chunk)) await new Promise((r) => out.once('drain', r))
-  }
-  await new Promise((r, j) => out.end((e) => (e ? j(e) : r())))
-  return hash.digest('hex')
-}
+/** Downloads in a separate process (docker/download.mjs) and returns the SHA-256. */
+const download = (url, file) =>
+  new Promise((resolve, reject) => {
+    const p = spawn(process.execPath, [fileURLToPath(new URL('./download.mjs', import.meta.url)), url, file])
+    let out = ''
+    let err = ''
+    p.stdout.on('data', (d) => (out += d))
+    p.stderr.on('data', (d) => (err = (err + d).slice(-500)))
+    p.on('error', reject)
+    p.on('close', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(`The download failed. ${err}`.trim()))))
+  })
 
 const installDeep = async () => {
   const asset = OPENGREP[process.arch]
@@ -438,10 +439,10 @@ const setDeep = (enabled) => {
   if (enabled) {
     if (deepInstall?.state === 'installing' || deepState().enabled) return deepState()
     deepInstall = { state: 'installing' }
+    // Installed: the owner starts the first scan with Scan now.
     installDeep()
       .then(() => {
         deepInstall = null
-        return checkLive()
       })
       .catch((e) => {
         deepInstall = { state: 'failed', error: e.message }
@@ -460,12 +461,30 @@ const setDeep = (enabled) => {
   return deepState()
 }
 
+/**
+ * Scan my site add-on (docker/site-scan.mjs): tests the running site with ZAP and Nuclei.
+ * Its address is this site's own, from DOMAIN or SITE_URL, never from a request.
+ */
+const ownURL = () => {
+  const site = String(process.env.SITE_URL || '').trim().replace(/\/+$/, '')
+  if (/^https?:\/\/[^/\s]+$/.test(site)) return site
+  const domain = String(process.env.DOMAIN || '').trim()
+  if (/^[a-z0-9.-]+$/i.test(domain)) return `https://${domain}`
+  return `http://127.0.0.1:${PORT}` // no domain yet: the site itself, inside the server
+}
+const siteScan = createSiteScan({
+  dataDir: DATA_DIR,
+  target: ownURL,
+  busy: () => job?.state === 'running',
+  log,
+})
+
 // ---------------------------------------------------------------- security check
 
 /** Stops an update whose code has a critical security problem. */
 const securityGate = async (id, dir) => {
   const deep = await deepOptions().catch(() => null)
-  const result = await scanSecurity(dir, { packages: false, deep })
+  const result = await scanSecurity(dir, { packages: false, deep, official: APP_DIR })
   const summary = `Security check: ${result.critical.length} critical, ${result.warnings.length} warnings, ${result.markedSafe.length} marked safe.\n`
   appendLog(`\n${summary}`)
   if (result.deep && !result.deep.ran) appendLog(`  Deep check skipped: ${result.deep.error}\n`)
@@ -493,13 +512,24 @@ const securityGate = async (id, dir) => {
 
 let checking = null
 /** Checks the live version's code and packages; saved for Settings > Security. */
+// Which UltimaPress image made a saved result: results from an older image are checked again.
+const IMAGE_VERSION = `${readJSON(path.join(APP_DIR, 'package.json'), {}).version || ''}:${crypto
+  .createHash('sha256')
+  .update(fs.readFileSync(fileURLToPath(new URL('./security-check.mjs', import.meta.url))))
+  .digest('hex')
+  .slice(0, 12)}`
+const liveResult = () => {
+  const saved = readJSON(SECURITY_FILE, null)
+  return saved && saved.checkedBy === IMAGE_VERSION ? saved : null
+}
+
 const checkLive = () => {
   checking ??= (async () => {
     try {
       const dir = releaseDir(state.active || null)
       const deep = await deepOptions().catch(() => null)
-      const result = await scanSecurity(dir, { deep })
-      const saved = { ...result, version: state.active || 'official', forClaude: forClaude(result) }
+      const result = await scanSecurity(dir, { deep, official: APP_DIR })
+      const saved = { ...result, version: state.active || 'official', checkedBy: IMAGE_VERSION, forClaude: forClaude(result) }
       writeJSON(SECURITY_FILE, saved)
       return saved
     } finally {
@@ -668,19 +698,27 @@ http
     try {
       if (req.method === 'GET' && req.url === '/status') return send(200, publicState())
       if (req.method === 'GET' && req.url === '/security')
-        return send(200, { live: readJSON(SECURITY_FILE, null), refused: null })
+        return send(200, { live: liveResult(), refused: null })
       let raw = ''
       for await (const chunk of req) raw += chunk
       const body = raw ? JSON.parse(raw) : {}
       const id = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15)
-      if (req.method === 'GET' && req.url === '/addons') return send(200, { addons: [deepState()] })
+      if (req.method === 'GET' && req.url === '/addons') return send(200, { addons: [deepState(), siteScan.state()] })
       if (req.method === 'POST' && req.url === '/addons') {
-        if (body.id !== 'deep-check') return send(400, { error: 'Unknown add-on.' })
-        return send(200, { addons: [setDeep(Boolean(body.enabled))] })
+        if (body.id === 'deep-check') setDeep(Boolean(body.enabled))
+        else if (body.id === 'site-scan') siteScan.set(Boolean(body.enabled))
+        else return send(400, { error: 'Unknown add-on.' })
+        return send(200, { addons: [deepState(), siteScan.state()] })
+      }
+      // Scan my site: GET the last result, POST to start a scan (no address is accepted).
+      if (req.method === 'GET' && req.url === '/site-scan') return send(200, { addon: siteScan.state(), result: siteScan.result() })
+      if (req.method === 'POST' && req.url === '/site-scan') {
+        siteScan.start()
+        return send(200, { addon: siteScan.state(), result: siteScan.result() })
       }
       if (req.method === 'POST' && req.url === '/security') {
         await checkLive()
-        return send(200, { live: readJSON(SECURITY_FILE, null), refused: null })
+        return send(200, { live: liveResult(), refused: null })
       }
       if (req.method === 'POST' && req.url === '/deploy') {
         const file = path.resolve(String(body.file || ''))
@@ -727,7 +765,11 @@ startMain(state.active || null)
 fs.rmSync(path.join(SC, 'security-refused.json'), { force: true })
 
 // Security check of the live version: 5 minutes after start, then once a day.
-setTimeout(() => checkLive().catch((e) => log(`security check failed: ${e.message}`)), 5 * 60_000).unref()
+// A result saved by an older version is out of date: check again soon after starting.
+setTimeout(
+  () => checkLive().catch((e) => log(`security check failed: ${e.message}`)),
+  (liveResult() ? 5 * 60 : 30) * 1000,
+).unref()
 setInterval(() => checkLive().catch((e) => log(`security check failed: ${e.message}`)), 24 * 3600_000).unref()
 
 const shutdown = async () => {

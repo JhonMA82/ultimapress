@@ -15,6 +15,7 @@ import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import { getServerSideURL } from '@/utilities/getURL'
 import { getSiteSettings, mediaURL, safeColor } from '@/utilities/getSiteSettings'
+import { fontsKey } from '@/utilities/localFonts'
 import { MaintenancePage } from '@/components/MaintenancePage'
 import { Widgets } from '@/components/Widgets'
 import { WIDGET_CSS } from '@/components/Widgets/styles'
@@ -22,13 +23,6 @@ import { SiteStructuredData } from '@/components/Seo'
 import { Announcement, Visitors } from '@/components/Visitors'
 
 import './globals.css'
-
-const fontHref = (fonts: (string | null | undefined)[]) => {
-  const families = Array.from(new Set(fonts.filter(Boolean) as string[]))
-    .map((f) => `family=${encodeURIComponent(f).replace(/%20/g, '+')}:wght@400;500;600;700;800`)
-    .join('&')
-  return `https://fonts.googleapis.com/css2?${families}&display=swap`
-}
 
 async function isLoggedIn() {
   try {
@@ -62,9 +56,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <head>
         <InitTheme />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="stylesheet" href={fontHref([headingFont, bodyFont])} />
+        {/* Fonts are served by the site itself, not by Google (src/utilities/localFonts.ts). */}
+        <link rel="stylesheet" href={`/fonts/site?v=${fontsKey([headingFont, bodyFont])}`} />
         {icon ? (
           <link href={icon} rel="icon" />
         ) : (

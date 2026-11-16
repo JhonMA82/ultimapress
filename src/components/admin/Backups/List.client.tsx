@@ -14,6 +14,9 @@ export function BackupList({ initial }: { initial: BackupInfo[] }) {
   const [restoring, setRestoring] = useState<string | null>(null)
   const [typed, setTyped] = useState('')
   const [withMedia, setWithMedia] = useState(true)
+  const [showUpload, setShowUpload] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [password, setPassword] = useState('')
 
   const refresh = async () => {
     const r = await fetch('/api/up/backups', { credentials: 'include' })
@@ -30,6 +33,30 @@ export function BackupList({ initial }: { initial: BackupInfo[] }) {
     refresh()
   }
 
+  const upload = async () => {
+    if (!file) return
+    setBusy('upload')
+    setMessage({ text: 'Uploading and checking the file…' })
+    const r = await fetch('/api/up/backups/upload', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/octet-stream', 'x-up-password': password },
+      body: file,
+    })
+    const b = await r.json().catch(() => ({}))
+    setBusy(null)
+    setPassword('')
+    if (!r.ok) {
+      setMessage({ text: b.error || 'Upload failed', bad: true })
+      return
+    }
+    setShowUpload(false)
+    setFile(null)
+    await refresh()
+    setRestoring(b.backup.id)
+    setMessage({ text: 'File checked and added to the list. Nothing has changed yet: restore it below.' })
+  }
+
   const restore = async (id: string) => {
     setBusy(id)
     setMessage({ text: 'Restoring… a safety backup of the current site is taken first.' })
@@ -43,7 +70,7 @@ export function BackupList({ initial }: { initial: BackupInfo[] }) {
     setBusy(null)
     setRestoring(null)
     setTyped('')
-    setMessage(r.ok ? { text: 'Restored. Reload the admin to see the restored content.' } : { text: b.error || 'Restore failed', bad: true })
+    setMessage(r.ok ? { text: 'Restored. Reload the admin to see it. If you are asked to log in, use your usual email and password.' } : { text: b.error || 'Restore failed', bad: true })
     refresh()
   }
 
@@ -59,8 +86,34 @@ export function BackupList({ initial }: { initial: BackupInfo[] }) {
         <button type="button" className="btn btn--style-primary btn--size-medium" style={{ margin: 0 }} disabled={Boolean(busy)} onClick={now}>
           {busy === 'now' ? 'Backing up…' : 'Back up now'}
         </button>
+        <button type="button" className="btn btn--style-secondary btn--size-medium" style={{ margin: 0 }} disabled={Boolean(busy)} onClick={() => setShowUpload(!showUpload)}>
+          Restore from a file
+        </button>
         {message && <span style={{ color: message.bad ? 'var(--theme-error-500)' : 'inherit' }}>{message.text}</span>}
       </div>
+
+      {showUpload && (
+        <div style={{ padding: 16, borderRadius: 10, background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-150)', marginBottom: 24, maxWidth: 720 }}>
+          <p style={{ margin: '0 0 12px', lineHeight: 1.6 }}>
+            Moving a site here, or keeping your demo site? Choose the file you got from <strong>Download</strong> on another
+            UltimaPress site. It is checked and added to the list below, and nothing changes until you restore it.
+          </p>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input type="file" accept=".tar,application/x-tar" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Your password"
+              autoComplete="current-password"
+              style={{ height: 36, padding: '0 10px', borderRadius: 6, border: '1px solid var(--theme-elevation-300)' }}
+            />
+            <button type="button" className="btn btn--style-primary btn--size-small" style={{ margin: 0 }} disabled={!file || !password || Boolean(busy)} onClick={upload}>
+              {busy === 'upload' ? 'Checking…' : 'Upload'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {list.length === 0 ? (
         <p>No backups yet. The first daily backup runs within a day, or press Back up now.</p>
@@ -90,6 +143,9 @@ export function BackupList({ initial }: { initial: BackupInfo[] }) {
                     {b.offsite === 'sent' ? 'Copied' : b.offsite === 'failed' ? 'Failed' : 'Off'}
                   </td>
                   <td style={{ padding: '10px 6px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <a className="btn btn--style-secondary btn--size-small" style={{ margin: '0 6px 0 0' }} href={`/api/up/backups/${b.id}/site`} title="Everything in one file, to move this site to another server">
+                      Download
+                    </a>
                     <button type="button" className="btn btn--style-secondary btn--size-small" style={{ margin: '0 6px 0 0' }} disabled={Boolean(busy)} onClick={() => setRestoring(restoring === b.id ? null : b.id)}>
                       Restore
                     </button>
@@ -103,9 +159,8 @@ export function BackupList({ initial }: { initial: BackupInfo[] }) {
                     <td colSpan={6} style={{ padding: '4px 6px 18px' }}>
                       <div style={{ padding: 16, borderRadius: 10, background: 'var(--theme-warning-100)' }}>
                         <p style={{ margin: '0 0 10px' }}>
-                          This replaces all current content with the backup from {when(b.createdAt)}. Anything added since is
-                          lost, but a safety backup of the site as it is now is taken first. A backup from before an UltimaPress
-                          update may not fit the current version.
+                          {b.uploaded ? 'This replaces all current content with the uploaded site.' : `This replaces all current content with the backup from ${when(b.createdAt)}. Anything added since is lost.`}{' '}
+                          A safety backup of the site as it is now is taken first. Your login stays the same.
                         </p>
                         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                           <input type="checkbox" checked={withMedia} onChange={(e) => setWithMedia(e.target.checked)} disabled={!b.mediaBytes} />

@@ -1057,14 +1057,17 @@ img{max-width:100%}
   }
 
   const pageUrl = slug === 'home' ? '/' : `/${slug}`
-  const back = chrome ? `${admin}/globals/${chrome}` : `${admin}/collections/pages/${pageId}`
+  const back = chrome ? `${admin}/globals/${chrome}` : `${admin}/collections/pages/${pageId}?editor=classic`
   const tab = (on: boolean) => (on ? 'is-on' : '')
 
   return (
     <div className={`up-vb${preview ? ' is-preview' : ''}`}>
       <header className="up-vb__bar">
+        <a className="up-vb__back up-vb__home" href={admin} title="Back to the dashboard" aria-label="Back to the dashboard" onClick={(e) => { if (dirty && !window.confirm('Leave without saving your changes?')) e.preventDefault() }}>
+          ←
+        </a>
         <a className="up-vb__back" href={back} onClick={(e) => { if (dirty && !window.confirm('Leave without saving your changes?')) e.preventDefault() }}>
-          ← Page editor
+          {chrome ? 'Classic editor' : 'Switch to classic editor'}
         </a>
         <div className="up-vb__title">
           <strong>{title}</strong>

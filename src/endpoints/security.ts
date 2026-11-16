@@ -45,13 +45,37 @@ export type SecurityResult = {
 }
 export type SecurityResultDeep = { ran: boolean; error?: string; hints: number; sameAsOfficial: number } | null
 export type AddonState = {
-  id: 'deep-check'
+  id: 'deep-check' | 'site-scan'
   available: boolean
   enabled: boolean
   version: string | null
   installedAt: string | null
   installing: boolean
   error: string | null
+  step?: string | null
+  scanning?: boolean
+  scanStep?: string | null
+  target?: string | null
+}
+export type SiteScanFinding = {
+  tool: 'ZAP' | 'Nuclei'
+  severity: 'critical' | 'high' | 'medium' | 'low'
+  title: string
+  detail: string
+  fix: string
+  where: string[]
+  count: number
+  ref: string
+}
+export type SiteScanResult = {
+  target: string
+  startedAt: string
+  finishedAt: string
+  tools: Record<'zap' | 'nuclei', { ran: boolean; error: string | null; version: string }>
+  counts: { critical: number; high: number; medium: number; low: number }
+  findings: SiteScanFinding[]
+  accepted?: { tool: string; severity: string; title: string; reason: string }[]
+  hidden?: number
 }
 export type SecurityState = {
   live: SecurityResult | null
@@ -128,10 +152,34 @@ export const securityEndpoints: Endpoint[] = [
         return Response.json({ error: 'Add-ons are installed on your server, so they are not available here.' }, { status: 400 })
       }
       const body = ((await req.json?.().catch(() => ({}))) || {}) as { id?: unknown; enabled?: unknown }
-      if (body.id !== 'deep-check' || typeof body.enabled !== 'boolean') {
+      if ((body.id !== 'deep-check' && body.id !== 'site-scan') || typeof body.enabled !== 'boolean') {
         return Response.json({ error: 'Unknown add-on.' }, { status: 400 })
       }
       const res = await supervisor('/addons', { id: body.id, enabled: body.enabled })
+      return Response.json(res.data, { status: res.ok ? 200 : res.status })
+    },
+  },
+  {
+    // Scan my site: GET the last result, POST to start a scan of this site's own address.
+    path: '/up/security/site-scan',
+    method: 'get',
+    handler: async (req) => {
+      if (!admin(req)) return deny()
+      if (!siteCodeAvailable()) return Response.json({ addon: null, result: null })
+      const res = await supervisor('/site-scan')
+      return Response.json(res.data, { status: res.ok ? 200 : res.status })
+    },
+  },
+  {
+    path: '/up/security/site-scan',
+    method: 'post',
+    handler: async (req) => {
+      if (!admin(req)) return deny()
+      if (!siteCodeAvailable()) {
+        return Response.json({ error: 'Scan my site runs on your server, so it is not available here.' }, { status: 400 })
+      }
+      // Nothing from the request is passed on: the server only scans its own address.
+      const res = await supervisor('/site-scan', {})
       return Response.json(res.data, { status: res.ok ? 200 : res.status })
     },
   },

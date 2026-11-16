@@ -29,6 +29,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 
 ## Contents
 
+- [What's new in 1.1.3](#whats-new-in-113)
 - [What's new in 1.1.2](#whats-new-in-112)
 - [What's new in 1.1](#whats-new-in-11)
 - [What's included](#whats-included)
@@ -48,6 +49,19 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - [Local development](#local-development)
 - [Requirements](#requirements)
 - [Credits and licence](#credits-and-licence)
+
+## What's new in 1.1.3
+
+**Scan my site and stronger defaults**
+- Optional **Scan my site** add-on (Settings > Security > Add-ons): tests your running site from the outside with OWASP ZAP (passive checks: security headers, cookies, information leaks) and Nuclei (known problems and misconfigurations). It only ever scans the site's own address and never submits its forms. Free, off by default, about 350 MB
+- Security headers on every page (no framing by other sites, no content sniffing, HTTPS kept on) and the software name is no longer sent
+- Fonts are downloaded once and served by your site itself, so visitors' browsers no longer contact Google Fonts
+- The Security page only shows what concerns your own site: UltimaPress's own internals and package notices are left out
+- A refused update shows its problems on the Site code page, with Copy for Claude, while you watch the update
+
+**Visual builder first, and moving sites**
+- Pages open in the visual builder. **Switch to classic editor** opens the form with every field (SEO, address, publishing), and **Switch to visual builder** goes back. Your choice is remembered. New pages start in the classic editor until they have a title and address. Authors always use the classic editor
+- **Backups > Download** saves the whole site (content, settings, images) as one file, and **Restore from a file** puts it back on another UltimaPress site: move a site to a new server, or keep the site you made in the free trial. The file is checked first, your password is asked again, and you keep your own login
 
 ## What's new in 1.1.2
 

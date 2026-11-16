@@ -45,6 +45,25 @@ const nextConfig: NextConfig = {
     return webpackConfig
   },
   reactStrictMode: true,
+  // Do not tell visitors (or bots) which software runs the site.
+  poweredByHeader: false,
+  // Security headers on every page and file. The Content-Security-Policy is limited to what
+  // cannot break an owner's own scripts, embeds or code snippets: no framing by other sites,
+  // no plugins (object/embed), and no changing the page's base address.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'; object-src 'none'; base-uri 'self'" },
+        ],
+      },
+    ]
+  },
   redirects,
   turbopack: {
     root: path.resolve(dirname),

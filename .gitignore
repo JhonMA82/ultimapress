@@ -25,3 +25,6 @@ tsconfig.tsbuildinfo
 
 # Deploy key for "pnpm ship" (works like a password)
 .ultimapress-deploy.json
+
+# Local data (fonts cache, backups) when running outside Docker
+/data
