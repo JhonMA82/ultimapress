@@ -28,8 +28,9 @@ ENV NODE_ENV=production \
     MEDIA_DIR=/app/media \
     PORT=3000 \
     HOSTNAME=0.0.0.0
-# For Build > Site code: database backups before an update, and packing/unpacking the code.
-RUN apk add --no-cache postgresql17-client zip unzip
+# For Build > Site code: database backups before an update, packing/unpacking the code, and
+# git to combine a site's own features with a new UltimaPress (docker/upgrade.mjs).
+RUN apk add --no-cache postgresql17-client zip unzip git
 COPY --from=builder /app ./
 RUN mkdir -p /app/media /app/data
 EXPOSE 3000

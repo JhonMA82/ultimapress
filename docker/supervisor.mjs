@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url'
 // The server's own copy of the security check, never the one inside uploaded code.
 import { deepBaseline, forClaude, scanSecurity } from './security-check.mjs'
 import { createSiteScan } from './site-scan.mjs'
+import { conflictsForClaude, createSources, isNewer, mergeSites, versionOf, copySource } from './upgrade.mjs'
 
 const APP_DIR = path.resolve(process.env.UP_APP_DIR || '/app')
 const DATA_DIR = path.resolve(process.env.UP_DATA_DIR || path.join(APP_DIR, 'data'))
@@ -39,6 +40,8 @@ const LOGS = path.join(SC, 'logs')
 const STATE_FILE = path.join(SC, 'state.json')
 const STATUS_FILE = path.join(SC, 'status.json')
 const SECURITY_FILE = path.join(SC, 'security.json') // last check of the live version
+const OFFICIAL = path.join(SC, 'official') // copies of official UltimaPress versions, for updates
+const UPGRADES = path.join(SC, 'upgrades') // updates that need Claude, as zips to download
 
 const PORT = Number(process.env.PORT || 3000)
 const HOST = process.env.HOSTNAME || '0.0.0.0'
@@ -47,7 +50,7 @@ const CANDIDATE_PORT = Number(process.env.UP_CANDIDATE_PORT || 3100)
 const TOKEN = crypto.randomBytes(24).toString('hex')
 const START_TIMEOUT = Number(process.env.UP_START_TIMEOUT || 180) * 1000
 
-for (const d of [SC, RELEASES, BACKUPS, INCOMING, LOGS]) fs.mkdirSync(d, { recursive: true })
+for (const d of [SC, RELEASES, BACKUPS, INCOMING, LOGS, UPGRADES]) fs.mkdirSync(d, { recursive: true })
 
 const log = (...a) => console.log('[supervisor]', ...a)
 const readJSON = (file, fallback) => {
@@ -187,6 +190,16 @@ const STEPS = {
   ],
   revert: [
     ['backup', 'Backing up your content'],
+    ['switch', 'Switching over'],
+  ],
+  upgrade: [
+    ['prepare', 'Getting the new UltimaPress'],
+    ['merge', 'Bringing your features over'],
+    ['security', 'Checking security'],
+    ['backup', 'Backing up your content'],
+    ['install', 'Installing what it needs'],
+    ['build', 'Building the site'],
+    ['check', 'Checking it starts'],
     ['switch', 'Switching over'],
   ],
 }
@@ -539,7 +552,11 @@ const checkLive = () => {
   return checking
 }
 
-const deploy = async ({ id, file, by, note }) => {
+/**
+ * Puts a new version live: `prepare(dir)` writes its code into the version's folder
+ * (an upload unpacked, or an UltimaPress update merged), then the usual steps follow.
+ */
+const goLive = async ({ id, by, note, prepare, cleanup = () => {} }) => {
   const from = state.active || null
   const fromDir = releaseDir(from)
   const dir = releaseDir(id)
@@ -547,8 +564,7 @@ const deploy = async ({ id, file, by, note }) => {
   let candidate = null
   let migrated = false
   try {
-    setStep('unpack')
-    await plain(unpack(file, dir), 'The file could not be opened. Send a zip of your site folder.')
+    const prepared = (await prepare(dir)) || {}
     migrated = migrationsOf(dir) !== migrationsOf(fromDir)
 
     setStep('security')
@@ -559,6 +575,7 @@ const deploy = async ({ id, file, by, note }) => {
 
     setStep('install')
     await plain(install(dir, fromDir), 'The packages the new code needs could not be installed.')
+    if (prepared.regenerateTypes) await regenerateTypes(dir)
 
     setStep('build')
     await plain(build(dir), 'The new code did not build. The details show why.')
@@ -571,7 +588,7 @@ const deploy = async ({ id, file, by, note }) => {
     candidate = null
 
     setStep('switch')
-    state.releases[id] = { createdAt: new Date().toISOString(), by, note, migrated }
+    state.releases[id] = { createdAt: new Date().toISOString(), by, note, migrated, base: versionOf(dir) }
     try {
       await switchTo(id, from)
     } catch (e) {
@@ -580,7 +597,7 @@ const deploy = async ({ id, file, by, note }) => {
     }
     state.previous = from
     state.active = id
-    record({ action: 'deploy', id, by, ok: true })
+    record({ action: job.kind, id, by, ok: true })
     cleanReleases()
     checkLive().catch(() => {})
   } catch (e) {
@@ -599,11 +616,107 @@ const deploy = async ({ id, file, by, note }) => {
     }
     fs.rmSync(dir, { recursive: true, force: true })
     fs.rmSync(`${dir}.unpack`, { recursive: true, force: true })
-    record({ action: 'deploy', id, by, ok: false, error: e.message })
+    record({ action: job.kind, id, by, ok: false, error: e.message })
     throw e
   } finally {
-    fs.rmSync(file, { force: true })
+    cleanup()
   }
+}
+
+const deploy = ({ id, file, by, note }) =>
+  goLive({
+    id,
+    by,
+    note,
+    prepare: async (dir) => {
+      setStep('unpack')
+      await plain(unpack(file, dir), 'The file could not be opened. Send a zip of your site folder.')
+    },
+    cleanup: () => fs.rmSync(file, { force: true }),
+  })
+
+// ---------------------------------------------------------------- UltimaPress updates
+
+const sources = createSources({ appDir: APP_DIR, cacheDir: OFFICIAL, download, log })
+
+/** What the site runs now and the newest UltimaPress it can move to. */
+const upgradeInfo = async () => {
+  const custom = Boolean(state.active)
+  const current = versionOf(releaseDir(state.active || null))
+  const image = versionOf(APP_DIR)
+  const latest = await sources.latestRelease()
+  let target = image
+  if (latest && isNewer(latest, target)) target = latest
+  const available = Boolean(current && target && isNewer(target, current))
+  return {
+    custom,
+    current,
+    image,
+    latest,
+    target: available ? target : null,
+    available,
+    autoUpdate: Boolean(state.autoUpdate),
+    lastAuto: state.lastAuto || null,
+  }
+}
+
+/** Generated types (src/payload-types.ts), made again from the merged collections. No database needed. */
+const regenerateTypes = (dir) =>
+  run(process.execPath, ['node_modules/payload/bin.js', 'generate:types'], {
+    cwd: dir,
+    env: { ...process.env, NODE_OPTIONS: '--no-deprecation', PAYLOAD_SECRET: process.env.PAYLOAD_SECRET || 'build-only-secret' },
+  }).catch(() => appendLog('\n(the types could not be generated again: the new UltimaPress ones are used)\n'))
+
+/** Zips a folder for download. */
+const zipFolder = (dir, file) => run('zip', ['-r', '-q', file, '.'], { cwd: dir })
+
+const upgrade = async ({ id, by, to }) => {
+  const info = await upgradeInfo()
+  // `to`: the version on this server, after Update in Docker Manager (see autoUpgrade).
+  const newVersion = to && isNewer(to, info.current) ? to : info.target
+  if (!newVersion) throw new Error('This site already runs the newest UltimaPress.')
+  const from = state.active || null
+  const ours = releaseDir(from)
+  const baseVersion = info.current
+  job.upgrade = { from: baseVersion, to: newVersion }
+  return goLive({
+    id,
+    by,
+    note: `UltimaPress ${baseVersion} to ${newVersion}`,
+    prepare: async (dir) => {
+      setStep('prepare')
+      const theirs = await sources.get(newVersion)
+      appendLog(`\nUltimaPress ${newVersion}: ${theirs === APP_DIR ? 'from this server' : 'ready'}.\n`)
+      setStep('merge')
+      if (!from) {
+        // Official version: nothing of the site's own to bring over.
+        copySource(theirs, dir)
+        return {}
+      }
+      const base = await sources.get(baseVersion)
+      const result = mergeSites({ base, ours, theirs, out: dir, baseVersion, newVersion })
+      appendLog(`\nMerged UltimaPress ${baseVersion} to ${newVersion}: ${result.conflicts.length} file(s) need Claude.\n`)
+      for (const n of result.notes) appendLog(`  ${n}\n`)
+      for (const c of result.conflicts) appendLog(`  ${c.file}: ${c.why}\n`)
+      job.upgrade.notes = result.notes
+      if (result.conflicts.length) {
+        fs.rmSync(path.join(UPGRADES), { recursive: true, force: true })
+        fs.mkdirSync(UPGRADES, { recursive: true })
+        await zipFolder(dir, path.join(UPGRADES, `${id}.zip`))
+        job.upgrade.conflicts = result.conflicts
+        job.upgrade.download = id
+        job.upgrade.forClaude = conflictsForClaude({ conflicts: result.conflicts, baseVersion, newVersion })
+        const n = result.conflicts.length
+        const e = new Error(
+          `UltimaPress ${newVersion} and your own features both changed ${n} file${n === 1 ? '' : 's'}, so nothing was changed on your site. ` +
+            'Download the updated code and give it to Claude with the text below. Then put it live as usual.',
+        )
+        e.code = 'conflicts'
+        throw e
+      }
+      return { regenerateTypes: result.typesMerged }
+    },
+  })
 }
 
 const revert = async ({ id, to, restoreData, by }) => {
@@ -655,7 +768,7 @@ const startJob = (kind, params) => {
     log: '',
   }
   saveStatus()
-  const work = kind === 'deploy' ? deploy(params) : revert(params)
+  const work = kind === 'deploy' ? deploy(params) : kind === 'upgrade' ? upgrade(params) : revert(params)
   work
     .then(() => {
       for (const s of job.steps) s.state = 'done'
@@ -672,6 +785,18 @@ const startJob = (kind, params) => {
     .finally(() => {
       job.finishedAt = new Date().toISOString()
       saveStatus()
+      if (kind === 'upgrade' && params.auto) {
+        // Shown on the dashboard and Site code; a failed version is not tried again on its own.
+        state.lastAuto = {
+          at: job.finishedAt,
+          from: job.upgrade?.from || null,
+          to: job.upgrade?.to || params.to || null,
+          ok: job.state === 'done',
+          error: job.state === 'done' ? null : job.error,
+          needsClaude: job.code === 'conflicts',
+        }
+        saveState()
+      }
     })
   return job
 }
@@ -725,6 +850,16 @@ http
         if (!file.startsWith(INCOMING + path.sep) || !fs.existsSync(file)) return send(400, { error: 'No upload found.' })
         return send(200, { job: startJob('deploy', { id, file, by: body.by, note: body.note }) })
       }
+      if (req.method === 'GET' && req.url === '/upgrade') return send(200, await upgradeInfo())
+      if (req.method === 'POST' && req.url === '/auto-update') {
+        state.autoUpdate = Boolean(body.enabled)
+        saveState()
+        log(`automatic updates ${state.autoUpdate ? 'on' : 'off'} (${body.by || 'admin'})`)
+        return send(200, await upgradeInfo())
+      }
+      if (req.method === 'POST' && req.url === '/upgrade') {
+        return send(200, { job: startJob('upgrade', { id, by: body.by }) })
+      }
       if (req.method === 'POST' && req.url === '/revert') {
         // Checked before the job starts, so the page can ask for confirmation.
         const from = state.active || null
@@ -761,6 +896,59 @@ if (state.active && !isBuilt(releaseDir(state.active))) {
 for (const f of fs.readdirSync(RELEASES)) if (f.endsWith('.unpack')) fs.rmSync(path.join(RELEASES, f), { recursive: true, force: true })
 
 startMain(state.active || null)
+// A copy of this image's UltimaPress, so sites with their own version can be updated later.
+try {
+  sources.keepImage()
+} catch (e) {
+  log(`could not keep a copy of this version: ${e.message}`)
+}
+
+/**
+ * After Update in Docker Manager, a site running its own version is still on the UltimaPress it
+ * was built on. Bring it over to this server's version once, automatically: the owner asked for
+ * the update, and it goes through the usual checks (nothing changes if anything fails). This also
+ * gives versions made before 1.1.4, whose admin has no Update button, the new UltimaPress.
+ */
+const autoUpgrade = () => {
+  const image = versionOf(APP_DIR)
+  const active = state.active
+  if (!active || !image) return
+  const base = versionOf(releaseDir(active))
+  const key = `${active}>${image}`
+  if (!base || !isNewer(image, base) || state.autoUpgraded?.[key]) return
+  state.autoUpgraded = { [key]: new Date().toISOString() } // once per version and server update
+  saveState()
+  const id = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15)
+  log(`your version is built on UltimaPress ${base}: bringing it over to ${image}`)
+  try {
+    startJob('upgrade', { id, by: 'Automatic, after the server update', to: image, auto: true })
+  } catch (e) {
+    log(`automatic update not started: ${e.message}`)
+  }
+}
+setTimeout(autoUpgrade, Number(process.env.UP_AUTO_UPGRADE_DELAY || 120) * 1000).unref()
+
+/**
+ * Automatic updates (Site code > Keep UltimaPress up to date, off by default): checked every
+ * hour, run at night (1 to 5 am, server time) when a new version is out. Same steps as the
+ * Update button. A version that failed is not tried again on its own.
+ */
+const nightlyUpdate = async () => {
+  if (!state.autoUpdate || job?.state === 'running') return
+  const hour = new Date().getHours()
+  if (!process.env.UP_AUTO_UPDATE_ANYTIME && (hour < 1 || hour >= 5)) return
+  const info = await upgradeInfo().catch(() => null)
+  if (!info?.available || !info.target) return
+  if (state.lastAuto && !state.lastAuto.ok && state.lastAuto.to === info.target) return
+  const id = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15)
+  log(`automatic update to UltimaPress ${info.target}`)
+  try {
+    startJob('upgrade', { id, by: 'Automatic update', to: info.target, auto: true })
+  } catch (e) {
+    log(`automatic update not started: ${e.message}`)
+  }
+}
+setInterval(() => nightlyUpdate().catch(() => {}), Number(process.env.UP_AUTO_UPDATE_EVERY || 3600) * 1000).unref()
 // Older versions kept the last refused update on the Security page; that is no longer shown.
 fs.rmSync(path.join(SC, 'security-refused.json'), { force: true })
 

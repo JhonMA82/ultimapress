@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 
+import { siteCodeAvailable, supervisor } from '../siteCode/supervisor'
+
 /** The installed UltimaPress version, from package.json (read once). */
 let installed: string | null = null
 export function upVersion(): string {
@@ -40,11 +42,30 @@ export const isNewer = (a: string, b: string) => {
   return false
 }
 
-/** An update to show, or null. */
+/**
+ * An update to show, or null. On a Docker install the server also knows about a newer
+ * version already on the server (after Update in Docker Manager) while the site runs its own.
+ */
 export async function availableUpdate(): Promise<string | null> {
+  if (siteCodeAvailable()) {
+    const res = await supervisor('/upgrade').catch(() => null)
+    if (res?.ok) return res.data.available ? String(res.data.target || '') || null : null
+  }
   const latest = await latestRelease()
   const current = upVersion()
   return latest && current && isNewer(latest, current) ? latest : null
 }
+
+/** The last automatic update (Site code > automatic updates), for the dashboard. */
+export async function lastAutoUpdate(): Promise<{ at: string; to?: string; ok: boolean } | null> {
+  if (!siteCodeAvailable()) return null
+  const res = await supervisor('/upgrade').catch(() => null)
+  return (res?.ok && (res.data.lastAuto as { at: string; to?: string; ok: boolean } | null)) || null
+}
+
+export { siteCodeAvailable }
+
+/** Where an update is installed: Site code on a Docker install, otherwise the releases page. */
+export const updateHref = () => (siteCodeAvailable() ? '/admin/site-code' : RELEASES_URL)
 
 export const RELEASES_URL = 'https://github.com/mrwebtv/ultimapress/releases'

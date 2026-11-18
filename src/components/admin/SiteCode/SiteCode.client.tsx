@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 type Step = { key: string; label: string; state: 'waiting' | 'running' | 'done' | 'failed' }
 type Job = {
   id: string
-  kind: 'deploy' | 'revert'
+  kind: 'deploy' | 'revert' | 'upgrade'
   state: 'running' | 'done' | 'failed'
   steps: Step[]
   error?: string
@@ -14,8 +14,25 @@ type Job = {
     problems?: { title: string; file: string; line: number; code: string; fix: string }[]
     forClaude?: string
   }
+  upgrade?: {
+    from: string
+    to: string
+    notes?: string[]
+    conflicts?: { file: string; why: string }[]
+    download?: string
+    forClaude?: string
+  }
   log?: string
   finishedAt?: string
+}
+type Upgrade = {
+  available?: boolean
+  custom?: boolean
+  current?: string
+  image?: string
+  target?: string | null
+  autoUpdate?: boolean
+  lastAuto?: { at: string; from?: string | null; to?: string | null; ok: boolean; error?: string | null; needsClaude?: boolean } | null
 }
 type Status = {
   available: boolean
@@ -32,6 +49,8 @@ type Ask =
   | { kind: 'staged' }
   | { kind: 'revert'; to: 'previous' | 'official'; restoreData?: boolean }
   | { kind: 'key' }
+  | { kind: 'upgrade'; to: string }
+  | { kind: 'auto'; enabled: boolean }
 
 const STARTER = 'Read CLAUDE.md first. Then add to my UltimaPress site: '
 
@@ -47,10 +66,18 @@ const TITLES: Record<Ask['kind'], string> = {
   staged: 'Put the update from Claude live',
   revert: 'Go back',
   key: 'Create a deploy key',
+  upgrade: 'Update UltimaPress',
+  auto: 'Automatic updates',
+}
+const JOB_TITLES: Record<Job['kind'], [string, string]> = {
+  deploy: ['Putting your new version live', 'Your new version is live'],
+  revert: ['Going back', 'Done: the site went back'],
+  upgrade: ['Updating UltimaPress', 'UltimaPress is up to date'],
 }
 
 export function SiteCodeClient() {
   const [status, setStatus] = useState<Status | null>(null)
+  const [update, setUpdate] = useState<Upgrade | null>(null)
   const [ask, setAsk] = useState<Ask | null>(null)
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -68,6 +95,8 @@ export function SiteCodeClient() {
       if (!res.ok) throw new Error()
       setStatus(await res.json())
       setRestarting(false)
+      const u = await fetch('/api/site-code/upgrade', { credentials: 'include', cache: 'no-store' })
+      if (u.ok) setUpdate(await u.json())
     } catch {
       // The site restarts for a few seconds when a new version takes over.
       if (sawRunning.current) setRestarting(true)
@@ -126,8 +155,13 @@ export function SiteCodeClient() {
         form.append('file', ask.file)
         res = await fetch('/api/site-code/upload', { method: 'POST', body: form, credentials: 'include' })
       } else {
-        const path = ask.kind === 'staged' ? 'deploy' : ask.kind
-        const extra = ask.kind === 'revert' ? { to: ask.to, restoreData: ask.restoreData === true } : {}
+        const path = ask.kind === 'staged' ? 'deploy' : ask.kind === 'auto' ? 'auto-update' : ask.kind
+        const extra =
+          ask.kind === 'revert'
+            ? { to: ask.to, restoreData: ask.restoreData === true }
+            : ask.kind === 'auto'
+              ? { enabled: ask.enabled }
+              : {}
         res = await fetch(`/api/site-code/${path}`, {
           method: 'POST',
           credentials: 'include',
@@ -146,6 +180,7 @@ export function SiteCodeClient() {
         throw new Error(data.error || 'That did not work.')
       }
       if (ask.kind === 'key') setKey(data)
+      else if (ask.kind === 'auto') setUpdate(data)
       // An update started from this page: show how it ends, here, until the page is left.
       else sawRunning.current = true
       setAsk(null)
@@ -194,7 +229,10 @@ export function SiteCodeClient() {
 
       {(job?.state === 'running' || restarting) && job && (
         <section className="up-build__card up-code__job" aria-live="polite">
-          <h2>{job.kind === 'deploy' ? 'Putting your new version live' : 'Going back'}</h2>
+          <h2>
+            {JOB_TITLES[job.kind][0]}
+            {job.upgrade && ` ${job.upgrade.from} to ${job.upgrade.to}`}
+          </h2>
           <p className="up-build__sub">
             This takes a few minutes. Your site stays online until the last step. You can leave this
             page.
@@ -216,7 +254,19 @@ export function SiteCodeClient() {
         <section className={`up-build__card up-code__result is-${job.state}`} aria-live="polite">
           {job.state === 'done' ? (
             <>
-              <h2>{job.kind === 'deploy' ? 'Your new version is live' : 'Done: the site went back'}</h2>
+              <h2>{JOB_TITLES[job.kind][1]}</h2>
+              {job.upgrade && (
+                <p className="up-build__sub">
+                  Your site now runs UltimaPress {job.upgrade.to}, with all your own features.
+                </p>
+              )}
+              {(job.upgrade?.notes || []).length > 0 && (
+                <ul className="up-code__notes">
+                  {(job.upgrade?.notes || []).map((n, i) => (
+                    <li key={i}>{n}</li>
+                  ))}
+                </ul>
+              )}
               <p className="up-build__sub">
                 Finished {when(job.finishedAt)}.{' '}
                 <a className="up-build__link" href="/admin/site-code">
@@ -227,11 +277,38 @@ export function SiteCodeClient() {
             </>
           ) : (
             <>
-              <h2>That update did not go live</h2>
+              <h2>{job.code === 'conflicts' ? 'This update needs Claude' : 'That update did not go live'}</h2>
               <p className="up-build__sub">
                 Your site is still running the version it had before. Nothing was lost.
               </p>
               <p className="up-code__error">{job.error}</p>
+              {job.code === 'conflicts' && job.upgrade?.conflicts && (
+                <div className="up-code__problems">
+                  <ul>
+                    {job.upgrade.conflicts.map((c, i) => (
+                      <li key={i}>
+                        <strong>{c.file}</strong>
+                        <span>{c.why}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="up-code__row">
+                    {job.upgrade.download && (
+                      <a
+                        className="up-code__primary"
+                        href={`/api/site-code/upgrade-download?id=${encodeURIComponent(job.upgrade.download)}`}
+                      >
+                        Download the updated code
+                      </a>
+                    )}
+                    {job.upgrade.forClaude && (
+                      <button type="button" className="up-build__copy" onClick={() => copy(job.upgrade?.forClaude || '', 'claude')}>
+                        {copied === 'claude' ? 'Copied' : 'Copy for Claude'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               {job.code === 'security' && (job.security?.problems || []).length > 0 && (
                 <div className="up-code__problems">
                   <ul>
@@ -261,6 +338,49 @@ export function SiteCodeClient() {
                 </button>
               </details>
             </>
+          )}
+        </section>
+      )}
+
+      {update?.current && !running && (
+        <section className={`up-build__card${update.available ? ' up-code__staged' : ''}`}>
+          <h2>{update.available && update.target ? `UltimaPress ${update.target} is ready` : 'UltimaPress updates'}</h2>
+          <p className="up-build__sub">
+            Your site runs UltimaPress {update.current}.{' '}
+            {update.available
+              ? update.custom
+                ? 'Your own features are kept: they are brought over to the new version, checked, and only go live if the site starts.'
+                : 'Your content is backed up first, and the site only switches over if the new version starts.'
+              : 'It is the newest version.'}
+          </p>
+          <div className="up-code__row">
+            {update.available && update.target && (
+              <button type="button" className="up-code__primary" onClick={() => open({ kind: 'upgrade', to: update.target || '' })}>
+                Update to {update.target}
+              </button>
+            )}
+            <button
+              type="button"
+              className="up-build__copy"
+              aria-pressed={Boolean(update.autoUpdate)}
+              onClick={() => open({ kind: 'auto', enabled: !update.autoUpdate })}
+            >
+              {update.autoUpdate ? 'Automatic updates: on' : 'Turn on automatic updates'}
+            </button>
+          </div>
+          <p className="up-code__note">
+            {update.autoUpdate
+              ? 'New versions are installed at night (1 to 5 am, server time), with the same checks. Your features are kept.'
+              : 'Or let your site install new versions on its own at night, with the same checks.'}
+          </p>
+          {update.lastAuto && (
+            <p className={`up-code__note${update.lastAuto.ok ? '' : ' up-code__error'}`}>
+              {update.lastAuto.ok
+                ? `Updated automatically to ${update.lastAuto.to} on ${when(update.lastAuto.at)}.`
+                : update.lastAuto.needsClaude
+                  ? `The automatic update to ${update.lastAuto.to} needs Claude (${when(update.lastAuto.at)}). Click Update to see which files.`
+                  : `The automatic update to ${update.lastAuto.to} did not go live (${when(update.lastAuto.at)}): ${update.lastAuto.error || ''} Your site kept its version.`}
+            </p>
           )}
         </section>
       )}
@@ -416,7 +536,8 @@ export function SiteCodeClient() {
                 </button>
               </div>
               <p className="up-code__note">
-                While your own version is live, Update in Docker Manager does not replace it.
+                New UltimaPress versions show at the top of this page, and Update in Docker Manager
+                brings your version over automatically. Your features are kept either way.
               </p>
             </>
           ) : (
@@ -450,6 +571,19 @@ export function SiteCodeClient() {
               </p>
             )}
             {ask.kind === 'key' && <p>Any deploy key you created before stops working.</p>}
+            {ask.kind === 'auto' && (
+              <p>
+                {ask.enabled
+                  ? 'Your site will install new UltimaPress versions on its own at night. Your content is backed up first, your features are kept, and it only switches over if the new version starts.'
+                  : 'New versions will wait for you to click Update.'}
+              </p>
+            )}
+            {ask.kind === 'upgrade' && (
+              <p>
+                UltimaPress {ask.to} is brought in and your own features are kept. Your content is
+                backed up, then the site is rebuilt. It takes a few minutes.
+              </p>
+            )}
             <label htmlFor="up-code-password">Your password</label>
             <input
               id="up-code-password"

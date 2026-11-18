@@ -38,3 +38,17 @@ their own reporting routes.
 ## Supported versions
 
 Security fixes are made to the latest version of UltimaPress.
+
+## Known advisories
+
+These show as alerts on GitHub, but they can't be reached from a site built with
+UltimaPress. Each will be updated as soon as a fixed version exists that UltimaPress can use.
+
+- **picomatch, [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) (high):**
+  no patched version has been released yet. UltimaPress never calls picomatch itself: it is
+  used inside Payload, Next.js and the build and test tools, always with fixed patterns from
+  their own code, and never receives visitor input.
+- **zod 3, [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) (high):**
+  fixed in zod 4.6.6, but the Payload MCP plugin (the Connect AI Client feature) requires
+  zod 3. It only checks requests from AI clients the site owner has connected with their own
+  API key, never from visitors.

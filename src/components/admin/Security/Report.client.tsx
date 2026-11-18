@@ -130,13 +130,31 @@ function Results({ r }: { r: SecurityResult }) {
           ))}
         </>
       )}
-      {r.deep && (
-        <p style={{ color: muted, margin: '20px 0 0', lineHeight: 1.55 }}>
-          {r.deep.ran
-            ? `Deep check: ran on this version. ${r.deep.sameAsOfficial} result(s) in code that is the same as the official UltimaPress were left out, and ${r.deep.hints} low-confidence hint(s) are not shown.`
-            : `Deep check: could not run this time. ${r.deep.error || ''}`}
-        </p>
-      )}
+      {r.deep &&
+        (r.deep.ran ? (
+          (() => {
+            const found = [...r.critical, ...r.warnings].filter(
+              (f) => (f as SecurityFinding & { source?: string }).source === 'deep',
+            ).length
+            return (
+              <details style={{ color: muted, margin: '20px 0 0', lineHeight: 1.55 }}>
+                <summary style={{ cursor: 'pointer' }}>
+                  {found === 0
+                    ? 'Deep check: no problems found in the code added for your site.'
+                    : `Deep check: ${found} problem${found === 1 ? '' : 's'} found in the code added for your site, listed above.`}
+                </summary>
+                <p style={{ margin: '8px 0 0' }}>
+                  Deep check looks at the code added or changed for your site, such as the features
+                  Claude built for you. The rest of your site is the standard UltimaPress code.
+                </p>
+              </details>
+            )
+          })()
+        ) : (
+          <p style={{ color: muted, margin: '20px 0 0', lineHeight: 1.55 }}>
+            Deep check could not run this time. {r.deep.error || ''}
+          </p>
+        ))}
       {(p.items || []).length > 0 && <h3 style={{ margin: '24px 0 10px' }}>Packages</h3>}
       {(p.items || []).length > 0 && <div style={card}>
         {p.checked && p.counts ? (

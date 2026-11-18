@@ -7,7 +7,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write # the version's tag and release (sites download it to update their own version)
   packages: write
 jobs:
   build:
@@ -38,3 +38,27 @@ jobs:
             ${{ steps.name.outputs.image }}:${{ steps.name.outputs.minor }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # A tag and release for each version (v1.1.4): the dashboard's update notice reads the latest
+  # release, and sites that run their own version download its source to bring their features over.
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          v=$(node -p "require('./package.json').version")
+          if gh release view "v$v" >/dev/null 2>&1; then
+            # Same version on a newer commit (a fix before the next version): move the release to it.
+            at=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$v" -q .object.sha 2>/dev/null || true)
+            if [ "$at" = "$GITHUB_SHA" ]; then
+              echo "Release v$v already points at this commit"
+              exit 0
+            fi
+            echo "Moving release v$v from $at to $GITHUB_SHA"
+            gh release delete "v$v" --cleanup-tag --yes
+          fi
+          gh release create "v$v" --target "$GITHUB_SHA" --title "UltimaPress $v" \
+            --notes "See What's new in the README: https://github.com/${GITHUB_REPOSITORY}#readme"

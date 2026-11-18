@@ -29,6 +29,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 
 ## Contents
 
+- [What's new in 1.1.4](#whats-new-in-114)
 - [What's new in 1.1.3](#whats-new-in-113)
 - [What's new in 1.1.2](#whats-new-in-112)
 - [What's new in 1.1](#whats-new-in-11)
@@ -49,6 +50,17 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - [Local development](#local-development)
 - [Requirements](#requirements)
 - [Credits and licence](#credits-and-licence)
+
+## What's new in 1.1.4
+
+**Update UltimaPress and keep your own features**
+- **One click**: when a new UltimaPress is out, the dashboard shows **Update to 1.1.x**. Click it, enter your password, and the update runs right there, with its progress. The same button is in **Build > Site code**, and Site health links to it
+- **Or fully automatic**: turn on **Automatic updates** in Site code (off by default, asks your password once). New versions are installed at night, 1 to 5 am server time, with the same checks. The dashboard shows "Updated automatically to 1.1.x" for a week. A version that fails is not tried again on its own
+- On a site with its own features, the update brings them over to the new version: what only UltimaPress changed is taken, what only your site changed is kept, and files changed on both sides are combined line by line. Then the usual steps follow: security check, backup, build, and the switch only happens if the site starts
+- If UltimaPress and your features changed the same lines, nothing changes on your site: Site code lists the files, with **Download the updated code** and **Copy for Claude**. Claude finishes the job and you put it live as usual
+- **Update** in Docker Manager now updates a site with its own features too: a few minutes after the server restarts, your version is brought over to the new UltimaPress automatically, with the same checks. If it cannot be done safely, nothing changes and Site code says why. Sites customised before 1.1.4 get their Update button this way
+- Each version now has its own tag and GitHub release, which the update notice reads and the update downloads
+- Next.js 16.4.6, with fixes for two cache issues in Next.js 16.4.4 and older
 
 ## What's new in 1.1.3
 
@@ -395,8 +407,8 @@ Good to know:
 - Building needs more memory than running. If an update stops during "Building the site",
   the server is probably too small: use a VPS with at least 4 GB of memory.
 - Your own versions are kept on the server's storage: allow about 3 GB of free disk space.
-- While your own version is live, **Update** in Docker Manager does not replace it. Switch
-  back to the official version in Site code to get a newer UltimaPress.
+- While your own version is live, **Update** in Docker Manager (or **Update** in Site code)
+  brings your features over to the new UltimaPress (see [Updates](#updates-backups-and-restoring)).
 - Prefer to keep your code on GitHub or on the server itself? See
   [Install from the files](#install-from-the-files-customised-sites): after a change, run
   `./update.sh` on the server.
@@ -449,7 +461,9 @@ password, Brevo or Resend. Without them, emails are written to the server log in
 
 | Task | How |
 | --- | --- |
-| Update the one-click install | **Update** in Hostinger Docker Manager |
+| Update the one-click install | **Update** in Hostinger Docker Manager, or **Update** in Build > Site code |
+| Update a site with its own features | **Update to 1.1.x** on the dashboard or in Build > Site code (your features are kept) |
+| Update automatically | **Automatic updates** in Build > Site code: new versions install at night |
 | Update a customised site | `./update.sh` (backs up first, pulls your latest code, rebuilds) |
 | Automatic backups | Every night at 03:00 (database) and Sundays (media), kept 14 days |
 | Back up now, to files you can download | `./scripts/backup.sh` (saved in `backups/`) |
@@ -459,6 +473,19 @@ password, Brevo or Resend. Without them, emails are written to the server log in
 
 Database changes in new versions are applied automatically when the site starts, so there
 is no separate "update database" step.
+
+**How updating a site with its own features works.** Your site's code is your features on top
+of the UltimaPress version you started from. **Update** in Site code compares three copies of
+the code: that version, your site, and the new UltimaPress. Changes only UltimaPress made are
+taken, changes only your site made are kept, and files both changed are combined line by line.
+Your packages are added to the new version's, and the database migrations of both are kept.
+The result then goes through the same steps as any new version: security check, backup, build,
+and a switch only if it starts. If both changed the same lines, nothing is changed on your site:
+download the updated code from Site code and give it to Claude with **Copy for Claude**.
+
+After **Update** in Docker Manager this happens on its own a few minutes after the server
+restarts. The new version comes from the server itself or from the version's release on GitHub. If a release also changes the server setup (the Docker image),
+click **Update** in Docker Manager as well.
 
 **Example: restore yesterday's backup**
 

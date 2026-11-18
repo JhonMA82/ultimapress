@@ -6,7 +6,8 @@ import { SeedButton } from './SeedButton'
 import { WordPressImporter } from './WordPressImporter'
 import { BuildWithClaude } from './BuildWithClaude'
 import { getServerSideURL } from '@/utilities/getURL'
-import { availableUpdate, RELEASES_URL, upVersion } from '@/utilities/version'
+import { availableUpdate, lastAutoUpdate, RELEASES_URL, siteCodeAvailable, upVersion } from '@/utilities/version'
+import { UpdateButton } from './UpdateButton'
 import './index.scss'
 
 const b = 'up-dash'
@@ -94,6 +95,9 @@ const BeforeDashboard = async ({ payload, user }: ServerProps) => {
   const live = !settings.maintenanceMode
   const version = upVersion()
   const update = isAdmin ? await availableUpdate() : null
+  const auto = isAdmin ? await lastAutoUpdate() : null
+  // "Updated automatically" shows for a week after an automatic update.
+  const autoRecent = auto?.ok && Date.now() - new Date(auto.at).getTime() < 7 * 86_400_000 ? auto : null
 
   const steps = [
     {
@@ -205,9 +209,10 @@ const BeforeDashboard = async ({ payload, user }: ServerProps) => {
                   UltimaPress {version}
                 </a>
               )}
-              {update && (
-                <a className={`${b}__badge is-off`} href={RELEASES_URL} target="_blank" rel="noreferrer">
-                  {update} available
+              {update && <UpdateButton target={update} docker={siteCodeAvailable()} href={RELEASES_URL} />}
+              {!update && autoRecent && (
+                <a className={`${b}__badge is-live`} href="/admin/site-code" title={`On ${new Date(autoRecent.at).toLocaleDateString()}`}>
+                  <i /> Updated automatically to {autoRecent.to}
                 </a>
               )}
               <a href={site} target="_blank" rel="noreferrer">

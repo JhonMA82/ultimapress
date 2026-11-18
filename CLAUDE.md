@@ -42,6 +42,7 @@ Payload reference: `.claude/skills/payload/SKILL.md`, then `.claude/skills/paylo
 | `docker/security-check.mjs`, `src/endpoints/security.ts`, `src/components/admin/Security/` | The security check: runs before `pnpm ship`, on the server before every update (critical problems stop it going live), daily, and from Settings > Security. The optional Deep check add-on (Opengrep with `docker/deep-check-rules.yaml`) is installed and run by `docker/supervisor.mjs`; the optional Scan my site add-on (ZAP and Nuclei, scans only the site's own address) is `docker/site-scan.mjs` |
 | `src/endpoints/siteCode.ts`, `src/siteCode/` | `/api/site-code/*`: admin only, password asked again for anything that changes the live site |
 | `docker/supervisor.mjs` | Runs the site in Docker and replaces its code safely (backup, build, check, switch, roll back) |
+| `docker/upgrade.mjs` | **Update UltimaPress** in Site code: brings a site's own features over to a new UltimaPress (three-way merge), then the usual steps |
 | `scripts/ship.mjs` | `pnpm ship`: sends this folder to the owner's site, where it waits for their password |
 | `src/app/(frontend)/` | Public website routes |
 | `src/app/(frontend)/globals.css` | Theme tokens and the four templates (`html[data-template=...]`) |
@@ -129,6 +130,11 @@ When the owner says "put it live" (or "ship it", "publish my changes"):
 3. Tell the owner to open **Site code** in their admin and confirm with their password.
    Nothing is live until they do. The site backs up their content, builds the new version
    and switches to it only if it starts.
+
+If the owner gives you code downloaded from **Site code** after an UltimaPress update that
+"needs Claude", some files contain both versions between `<<<<<<< your site` and `>>>>>>>`
+markers. Combine them so the owner's features work with the new UltimaPress, remove every
+marker (search the whole folder), run the type and security checks, then put it live.
 
 If the Site code page shows that an update did not go live, ask the owner for the text under
 "What happened", fix the cause and ship again. Never ask for, store or send the owner's

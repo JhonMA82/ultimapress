@@ -1,4 +1,6 @@
 import { spawn } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 import type { Endpoint, PayloadRequest } from 'payload'
 import { Readable } from 'stream'
 
@@ -11,6 +13,7 @@ import {
   readStaged,
   saveUpload,
   siteCodeAvailable,
+  siteCodeDir,
   stageUpload,
   supervisor,
 } from '../siteCode/supervisor'
@@ -224,4 +227,78 @@ const key: Endpoint = {
   },
 }
 
-export const siteCodeEndpoints: Endpoint[] = [status, download, upload, deploy, discard, revert, key]
+/** GET /api/site-code/upgrade: the UltimaPress version this site runs and the newest it can move to. */
+const upgradeInfo: Endpoint = {
+  path: '/site-code/upgrade',
+  method: 'get',
+  handler: async (req) => {
+    if (!admin(req)) return json({ error: 'Administrators only.' }, 401)
+    if (!siteCodeAvailable()) return json({ available: false })
+    const res = await supervisor('/upgrade').catch(() => null)
+    return res?.ok ? json(res.data) : json({ available: false })
+  },
+}
+
+/** POST /api/site-code/upgrade { password }: updates UltimaPress and keeps the site's own features. */
+const upgrade: Endpoint = {
+  path: '/site-code/upgrade',
+  method: 'post',
+  handler: async (req) => {
+    if (!admin(req)) return json({ error: 'Administrators only.' }, 401)
+    if (!siteCodeAvailable()) return unavailable()
+    const data = await body(req)
+    if (!(await passwordOk(req, data.password))) return json({ error: 'Wrong password.' }, 403)
+    const res = await supervisor('/upgrade', { by: who(req) })
+    return json(res.data, res.status)
+  },
+}
+
+/** POST /api/site-code/auto-update { password, enabled }: automatic UltimaPress updates at night. */
+const autoUpdate: Endpoint = {
+  path: '/site-code/auto-update',
+  method: 'post',
+  handler: async (req) => {
+    if (!admin(req)) return json({ error: 'Administrators only.' }, 401)
+    if (!siteCodeAvailable()) return unavailable()
+    const data = await body(req)
+    if (!(await passwordOk(req, data.password))) return json({ error: 'Wrong password.' }, 403)
+    const res = await supervisor('/auto-update', { enabled: data.enabled === true, by: who(req) })
+    return json(res.data, res.status)
+  },
+}
+
+/** GET /api/site-code/upgrade-download?id=<update id>: an update that needs Claude, as a zip. */
+const upgradeDownload: Endpoint = {
+  path: '/site-code/upgrade-download',
+  method: 'get',
+  handler: async (req) => {
+    if (!admin(req)) return json({ error: 'Administrators only.' }, 401)
+    if (!siteCodeAvailable()) return unavailable()
+    const id = String(req.searchParams?.get('id') || '')
+    // Only an update id (20261117-213045): never a path.
+    if (!/^\d{8}-\d{6}$/.test(id)) return json({ error: 'Unknown update.' }, 400)
+    const file = path.join(siteCodeDir(), 'upgrades', `${id}.zip`)
+    if (!fs.existsSync(file)) return json({ error: 'That download is no longer on the server.' }, 404)
+    return new Response(Readable.toWeb(fs.createReadStream(file)) as ReadableStream, {
+      headers: {
+        'content-type': 'application/zip',
+        'content-disposition': `attachment; filename="my-ultimapress-site-update-${id.slice(0, 8)}.zip"`,
+        'cache-control': 'no-store',
+      },
+    })
+  },
+}
+
+export const siteCodeEndpoints: Endpoint[] = [
+  status,
+  download,
+  upload,
+  deploy,
+  discard,
+  revert,
+  key,
+  upgradeInfo,
+  upgrade,
+  upgradeDownload,
+  autoUpdate,
+]

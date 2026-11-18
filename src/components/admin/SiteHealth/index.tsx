@@ -8,7 +8,7 @@ import React from 'react'
 
 import { hasRole } from '@/access/roles'
 import { securityState } from '@/endpoints/security'
-import { availableUpdate, RELEASES_URL, upVersion } from '@/utilities/version'
+import { availableUpdate, RELEASES_URL, updateHref, upVersion } from '@/utilities/version'
 import { backupDir, listBackups } from '@/siteBackups'
 import { getServerSideURL } from '@/utilities/getURL'
 
@@ -143,7 +143,7 @@ async function runChecks(payload: Payload, admin: string): Promise<Check[]> {
   const current = upVersion()
   const update = await availableUpdate()
   if (update) {
-    checks.push({ status: 'warn', title: `UltimaPress ${update} is available`, detail: `You have version ${current}.`, href: RELEASES_URL, action: 'See what is new' })
+    checks.push({ status: 'warn', title: `UltimaPress ${update} is available`, detail: `You have version ${current}. Your own features are kept when you update.`, href: updateHref(), action: 'Update' })
   } else {
     checks.push({ status: 'good', title: current ? `UltimaPress ${current}` : 'UltimaPress', detail: 'The version installed on this site. No newer release found.', href: RELEASES_URL, action: 'Releases' })
   }
