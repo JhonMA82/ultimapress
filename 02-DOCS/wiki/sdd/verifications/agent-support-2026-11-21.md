@@ -164,3 +164,14 @@ copy. The README labels were updated; the marketing narrative was left out of sc
 
 These are recorded as pending, not as passing. The rest of the contract is verified with the
 commands and outputs above.
+
+## Closing
+
+- Product commit: `39949c6` (`✨ Add native agent support for OMP, OpenCode V2 and Pi`), on
+  `main`, not pushed. The image workflow publishes from `main`, so pushing is the human's call.
+- Final targeted run: 12/12 (`native-mcp-setup` 7 tests, `build-with-ai` 5). `pnpm exec tsc
+  --noEmit` exit 0. `node docker/security-check.mjs`: passed, 0 critical.
+- Panel recorded as `agent-support/T013` (correctness, security, tests); the surviving findings
+  were fixed before the commit. See `02-DOCS/wiki/sdd/reviews/agent-support.md`.
+- Parked: no push, no release, no image build. Exact command when the human decides:
+  `git push origin main` (this triggers `.github/workflows/image.yml`).

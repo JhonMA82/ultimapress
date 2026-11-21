@@ -70,3 +70,12 @@ Plan: `02-DOCS/wiki/sdd/plans/agent-support.md`.
   V2 hierarchy; tests for the two AC5 messages, the three legacy flows, storage spies, the
   clipboard success path and 15 s cold-run timeouts.
 - No surviving should-fix; three nits and four test gaps closed. Verification record updated.
+
+### 2026-11-21 — Close
+
+- Commit `39949c6` on `main`; product and SDD artifacts committed, harness install left untracked
+  (`.omp/`, `.rsc.json`, `01-TOOLS/`, `.gitignore`).
+- Not pushed: the plan forbids publishing and the image workflow publishes from `main`. The exact
+  push command is recorded in the verification file.
+- Remaining acceptance work is the Docker-dependent delivery and the environment-dependent
+  browser/Pi/Inspector runs; all are listed as pending in the verification record.
