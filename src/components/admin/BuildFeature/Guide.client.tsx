@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 
-const STARTER = 'Read CLAUDE.md first. Then add to my UltimaPress site: '
+import { BUILD_FEATURE_STARTER, CodingAgentSetup } from '../CodingAgentSetup'
 
 const ideas = [
   { title: 'Events', prompt: 'an events section with dates, a venue and a booking button' },
@@ -55,21 +55,24 @@ export function BuildFeatureGuide() {
             </a>
           </li>
           <li>
-            <strong>Open the folder in Claude Code</strong>
-            <span>In the Claude desktop app, go to Code and choose the folder.</span>
+            <strong>Open the folder in your agent</strong>
+            <span>
+              <CodingAgentSetup />
+            </span>
           </li>
           <li>
             <strong>Describe the feature</strong>
             <span>Start your request like this, then say what you want:</span>
             <div className="up-build__prompt">
-              <code>{STARTER}</code>
-              <CopyButton value={STARTER} label="starter prompt" />
+              <code>{BUILD_FEATURE_STARTER}</code>
+              <CopyButton value={BUILD_FEATURE_STARTER} label="starter prompt" />
             </div>
           </li>
           <li>
             <strong>Put it live</strong>
             <span>
-              Tell Claude &ldquo;put it live&rdquo;, then confirm with your password in Site code. Your
+              Tell your agent &ldquo;put it live&rdquo;. It runs <code>pnpm ship</code>, which sends
+              the folder; nothing is live until you confirm with your password in Site code. Your
               content is backed up first, and it stays as it is.
             </span>
           </li>
@@ -78,7 +81,7 @@ export function BuildFeatureGuide() {
 
       <section className="up-build__card">
         <h2>Ideas to start with</h2>
-        <p className="up-build__sub">Copy one, paste it into Claude Code and change the details.</p>
+        <p className="up-build__sub">Copy one, paste it into your agent and change the details.</p>
         <ul className="up-build__ideas">
           {ideas.map((i) => (
             <li key={i.title}>
@@ -86,7 +89,7 @@ export function BuildFeatureGuide() {
                 <strong>{i.title}</strong>
                 <span>Add {i.prompt}.</span>
               </div>
-              <CopyButton value={`${STARTER}${i.prompt}.`} label={`${i.title} request`} />
+              <CopyButton value={`${BUILD_FEATURE_STARTER}${i.prompt}.`} label={`${i.title} request`} />
             </li>
           ))}
         </ul>

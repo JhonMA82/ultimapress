@@ -670,15 +670,17 @@
   }
   &__copy {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     width: 100%;
-    align-items: center;
+    align-items: flex-start;
     code {
-      flex: 1;
+      flex: 1 1 220px;
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
       padding: 9px 12px;
       border-radius: 10px;
       background: rgba(255, 255, 255, 0.08);
@@ -688,6 +690,44 @@
     .up-dash__btn {
       background: #fff;
       color: #15121f !important;
+      flex: 0 0 auto;
+    }
+  }
+  &__manual {
+    flex: 1 0 100%;
+    width: 100%;
+    resize: vertical;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.25);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+  }
+  &__client {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #cdc6e6;
+    }
+    select {
+      flex: 1;
+      min-width: 0;
+      max-width: 320px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font: inherit;
+      font-size: 14px;
+    }
+    option {
+      color: #15121f;
     }
   }
   &__more summary {

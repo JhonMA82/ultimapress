@@ -86,7 +86,7 @@ const Finding = ({ f, kind }: { f: SecurityFinding; kind: 'critical' | 'warning'
   </div>
 )
 
-function CopyForClaude({ text }: { text?: string }) {
+function CopyRepairPrompt({ text }: { text?: string }) {
   const [copied, setCopied] = useState(false)
   if (!text) return null
   return (
@@ -100,11 +100,11 @@ function CopyForClaude({ text }: { text?: string }) {
           setCopied(true)
           setTimeout(() => setCopied(false), 2500)
         } catch {
-          window.prompt('Copy this for Claude:', text)
+          window.prompt('Copy the repair prompt:', text)
         }
       }}
     >
-      {copied ? 'Copied' : 'Copy for Claude'}
+      {copied ? 'Copied' : 'Copy repair prompt'}
     </button>
   )
 }
@@ -145,7 +145,7 @@ function Results({ r }: { r: SecurityResult }) {
                 </summary>
                 <p style={{ margin: '8px 0 0' }}>
                   Deep check looks at the code added or changed for your site, such as the features
-                  Claude built for you. The rest of your site is the standard UltimaPress code.
+                  your agent built for you. The rest of your site is the standard UltimaPress code.
                 </p>
               </details>
             )
@@ -161,7 +161,7 @@ function Results({ r }: { r: SecurityResult }) {
           <>
             <p style={{ margin: '0 0 8px', lineHeight: 1.55 }}>
               Packages added for your site have known vulnerabilities: {p.counts.critical} critical, {p.counts.high}{' '}
-              high, {p.counts.moderate} moderate, {p.counts.low} low. They never stop an update. Ask Claude to update
+              high, {p.counts.moderate} moderate, {p.counts.low} low. They never stop an update. Ask your agent to update
               these packages.
             </p>
             {(p.items || []).length > 0 && (
@@ -182,11 +182,11 @@ function Results({ r }: { r: SecurityResult }) {
       {r.markedSafe.length > 0 && (
         <div style={{ ...card, marginTop: 24 }}>
           <p style={{ margin: '0 0 12px', lineHeight: 1.6 }}>
-            {r.markedSafe.length} place{r.markedSafe.length === 1 ? ' in your added code is' : 's in your added code are'}{' '}
-            marked safe by Claude, so the check skips {r.markedSafe.length === 1 ? 'it' : 'them'}. Ask Claude to double-check{' '}
+            {r.markedSafe.length} place{r.markedSafe.length === 1 ? ' is' : 's are'}{' '}
+            marked safe, so the check skips {r.markedSafe.length === 1 ? 'it' : 'them'}. Ask your agent to double-check{' '}
             {r.markedSafe.length === 1 ? 'it' : 'them'} in a new chat.
           </p>
-          <CopyForClaude
+          <CopyRepairPrompt
             text={[
               'The UltimaPress security check skips these places in my site’s code because they are marked "// up-security: <reason>". Please review each one as an attacker would: is the reason really true? If not, fix the code properly and remove the marker.',
               '',
@@ -487,7 +487,7 @@ function SiteScan({ initial }: { initial?: AddonState[] }) {
       )}
       <p style={{ margin: '14px 0 0', fontSize: 12.5, color: muted, lineHeight: 1.55 }}>
         OWASP ZAP (Apache 2.0) and Nuclei (MIT) are open source. Some findings can be false alarms: check each one, or
-        paste it into Claude and ask whether it applies to your site.
+        paste it into your agent and ask whether it applies to your site.
       </p>
     </div>
   )
@@ -530,7 +530,7 @@ export function SecurityReport({
         <button type="button" className="btn btn--style-primary btn--size-small" style={{ margin: 0 }} onClick={check} disabled={busy}>
           {busy ? 'Checking…' : 'Check now'}
         </button>
-        {live && (live.critical.length > 0 || live.warnings.length > 0) && <CopyForClaude text={live.forClaude} />}
+        {live && (live.critical.length > 0 || live.warnings.length > 0) && <CopyRepairPrompt text={live.forClaude} />}
       </div>
       {error && <p style={{ color: 'var(--theme-error-500)' }}>{error}</p>}
       {live && live.critical.length === 0 && live.warnings.length === 0 && (

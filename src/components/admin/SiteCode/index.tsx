@@ -11,8 +11,8 @@ import { SiteCodeClient } from './SiteCode.client'
 import './site-code.scss'
 
 /**
- * "Site code" (/admin/site-code): download this site's code, change it with
- * Claude, put it live. Administrators only. The work is done by the supervisor
+ * "Site code" (/admin/site-code): download this site's code, change it with a
+ * coding agent, put it live. Administrators only. The work is done by the supervisor
  * (docker/supervisor.mjs) through the endpoints in src/endpoints/siteCode.ts.
  */
 export function SiteCodeView({ initPageResult, params, searchParams }: AdminViewServerProps) {
@@ -38,9 +38,9 @@ export function SiteCodeView({ initPageResult, params, searchParams }: AdminView
             <p className="up-build__eyebrow">Build with AI</p>
             <h1>Site code</h1>
             <p className="up-build__lead">
-              Download your site&apos;s code, change it with Claude, and put it live from here. Your
-              content is backed up first, and if the new version does not start, the current one
-              keeps running.
+              Download your site&apos;s code, change it with your coding agent, and put it live from
+              here. Your content is backed up first, and if the new version does not start, the
+              current one keeps running.
             </p>
           </header>
           <SiteCodeClient />

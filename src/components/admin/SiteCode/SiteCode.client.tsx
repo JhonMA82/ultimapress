@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
+import { BUILD_FEATURE_STARTER, CodingAgentSetup } from '../CodingAgentSetup'
+
 type Step = { key: string; label: string; state: 'waiting' | 'running' | 'done' | 'failed' }
 type Job = {
   id: string
@@ -52,8 +54,6 @@ type Ask =
   | { kind: 'upgrade'; to: string }
   | { kind: 'auto'; enabled: boolean }
 
-const STARTER = 'Read CLAUDE.md first. Then add to my UltimaPress site: '
-
 const when = (iso?: string) => {
   if (!iso) return ''
   const d = new Date(iso)
@@ -63,7 +63,7 @@ const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`
 
 const TITLES: Record<Ask['kind'], string> = {
   upload: 'Put this version live',
-  staged: 'Put the update from Claude live',
+  staged: 'Put the update live',
   revert: 'Go back',
   key: 'Create a deploy key',
   upgrade: 'Update UltimaPress',
@@ -277,7 +277,7 @@ export function SiteCodeClient() {
             </>
           ) : (
             <>
-              <h2>{job.code === 'conflicts' ? 'This update needs Claude' : 'That update did not go live'}</h2>
+              <h2>{job.code === 'conflicts' ? 'This update needs attention' : 'That update did not go live'}</h2>
               <p className="up-build__sub">
                 Your site is still running the version it had before. Nothing was lost.
               </p>
@@ -302,8 +302,8 @@ export function SiteCodeClient() {
                       </a>
                     )}
                     {job.upgrade.forClaude && (
-                      <button type="button" className="up-build__copy" onClick={() => copy(job.upgrade?.forClaude || '', 'claude')}>
-                        {copied === 'claude' ? 'Copied' : 'Copy for Claude'}
+                      <button type="button" className="up-build__copy" onClick={() => copy(job.upgrade?.forClaude || '', 'repair')}>
+                        {copied === 'repair' ? 'Copied' : 'Copy repair prompt'}
                       </button>
                     )}
                   </div>
@@ -324,14 +324,14 @@ export function SiteCodeClient() {
                     ))}
                   </ul>
                   {job.security?.forClaude && (
-                    <button type="button" className="up-build__copy" onClick={() => copy(job.security?.forClaude || '', 'claude')}>
-                      {copied === 'claude' ? 'Copied' : 'Copy for Claude'}
+                    <button type="button" className="up-build__copy" onClick={() => copy(job.security?.forClaude || '', 'repair')}>
+                      {copied === 'repair' ? 'Copied' : 'Copy repair prompt'}
                     </button>
                   )}
                 </div>
               )}
               <details className="up-code__log">
-                <summary>What happened (show this to Claude)</summary>
+                <summary>What happened (show this to your agent)</summary>
                 <pre>{job.log}</pre>
                 <button type="button" className="up-build__copy" onClick={() => copy(job.log || '', 'log')}>
                   {copied === 'log' ? 'Copied' : 'Copy'}
@@ -378,7 +378,7 @@ export function SiteCodeClient() {
               {update.lastAuto.ok
                 ? `Updated automatically to ${update.lastAuto.to} on ${when(update.lastAuto.at)}.`
                 : update.lastAuto.needsClaude
-                  ? `The automatic update to ${update.lastAuto.to} needs Claude (${when(update.lastAuto.at)}). Click Update to see which files.`
+                  ? `The automatic update to ${update.lastAuto.to} needs attention (${when(update.lastAuto.at)}). Click Update to see which files.`
                   : `The automatic update to ${update.lastAuto.to} did not go live (${when(update.lastAuto.at)}): ${update.lastAuto.error || ''} Your site kept its version.`}
             </p>
           )}
@@ -387,13 +387,13 @@ export function SiteCodeClient() {
 
       {status.staged && !running && (
         <section className="up-build__card up-code__staged">
-          <h2>Claude sent an update</h2>
+          <h2>An update is waiting</h2>
           <p className="up-build__sub">
             Received {when(status.staged.at)} ({mb(status.staged.size)}). It is not live yet.
           </p>
           <div className="up-code__row">
             <button type="button" className="up-code__primary" onClick={() => open({ kind: 'staged' })}>
-              Put it live
+              Put the update live
             </button>
             <button
               type="button"
@@ -423,14 +423,14 @@ export function SiteCodeClient() {
 
         <section className="up-build__card">
           <span className="up-code__num">2</span>
-          <h2>Change it with Claude</h2>
+          <h2>Change it with your agent</h2>
           <p className="up-build__sub up-code__plain">
-            In the Claude desktop app, go to Code, choose the folder and start your request like
-            this:
+            <CodingAgentSetup />
           </p>
+          <p className="up-build__sub up-code__plain">Start your request like this:</p>
           <div className="up-build__prompt">
-            <code>{STARTER}</code>
-            <button type="button" className="up-build__copy" onClick={() => copy(STARTER, 'starter')}>
+            <code>{BUILD_FEATURE_STARTER}</code>
+            <button type="button" className="up-build__copy" onClick={() => copy(BUILD_FEATURE_STARTER, 'starter')}>
               {copied === 'starter' ? 'Copied' : 'Copy'}
             </button>
           </div>
@@ -440,8 +440,9 @@ export function SiteCodeClient() {
           <span className="up-code__num">3</span>
           <h2>Put it live</h2>
           <p className="up-build__sub up-code__plain">
-            Tell Claude &ldquo;put it live&rdquo; (set that up below), or zip the folder and drop it
-            here.
+            Tell your agent &ldquo;put it live&rdquo;. It runs <code>pnpm ship</code>, which sends
+            the folder; the update waits here until you confirm with your password. Or zip the
+            folder and drop it here.
           </p>
           <label
             className={`up-code__drop${drag ? ' is-over' : ''}`}
@@ -476,15 +477,17 @@ export function SiteCodeClient() {
 
       <div className="up-build__grid">
         <section className="up-build__card">
-          <h2>Let Claude put it live</h2>
+          <h2>Let your agent put it live</h2>
           <p className="up-build__sub up-code__plain">
-            A deploy key lets Claude send your changes here when you say &ldquo;put it live&rdquo;.
-            Nothing goes live until you confirm it on this page with your password.
+            A deploy key lets your agent send your changes here when you say &ldquo;put it
+            live&rdquo;. Nothing goes live until you confirm it on this page with your password.
           </p>
           {key ? (
             <>
               <p className="up-build__sub up-code__plain">
-                Paste this into Claude Code once. It is only shown now, and it works like a password.
+                Run this line once in the terminal of your site&apos;s folder. It is only shown now,
+                and it works like a password. After this, <code>pnpm ship</code> is enough; do not
+                paste the key into a chat.
               </p>
               <div className="up-build__prompt">
                 <code title={shipLine}>{shipLine}</code>

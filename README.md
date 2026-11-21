@@ -57,7 +57,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - **One click**: when a new UltimaPress is out, the dashboard shows **Update to 1.1.x**. Click it, enter your password, and the update runs right there, with its progress. The same button is in **Build > Site code**, and Site health links to it
 - **Or fully automatic**: turn on **Automatic updates** in Site code (off by default, asks your password once). New versions are installed at night, 1 to 5 am server time, with the same checks. The dashboard shows "Updated automatically to 1.1.x" for a week. A version that fails is not tried again on its own
 - On a site with its own features, the update brings them over to the new version: what only UltimaPress changed is taken, what only your site changed is kept, and files changed on both sides are combined line by line. Then the usual steps follow: security check, backup, build, and the switch only happens if the site starts
-- If UltimaPress and your features changed the same lines, nothing changes on your site: Site code lists the files, with **Download the updated code** and **Copy for Claude**. Claude finishes the job and you put it live as usual
+- If UltimaPress and your features changed the same lines, nothing changes on your site: Site code lists the files, with **Download the updated code** and **Copy repair prompt**. Your agent finishes the job and you put it live as usual
 - **Update** in Docker Manager now updates a site with its own features too: a few minutes after the server restarts, your version is brought over to the new UltimaPress automatically, with the same checks. If it cannot be done safely, nothing changes and Site code says why. Sites customised before 1.1.4 get their Update button this way
 - Each version now has its own tag and GitHub release, which the update notice reads and the update downloads
 - Next.js 16.4.6, with fixes for two cache issues in Next.js 16.4.4 and older
@@ -69,7 +69,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - Security headers on every page (no framing by other sites, no content sniffing, HTTPS kept on) and the software name is no longer sent
 - Fonts are downloaded once and served by your site itself, so visitors' browsers no longer contact Google Fonts
 - The Security page only shows what concerns your own site: UltimaPress's own internals and package notices are left out
-- A refused update shows its problems on the Site code page, with Copy for Claude, while you watch the update
+- A refused update shows its problems on the Site code page, with Copy repair prompt, while you watch the update
 
 **Visual builder first, and moving sites**
 - Pages open in the visual builder. **Switch to classic editor** opens the form with every field (SEO, address, publishing), and **Switch to visual builder** goes back. Your choice is remembered. New pages start in the classic editor until they have a title and address. Authors always use the classic editor
@@ -81,7 +81,7 @@ open the project in Claude and describe it; Claude builds it straight into your 
 - Every new version of your site's code is checked for security problems before it goes live: actions anyone can use without logging in, content anyone can change, visitor input that reaches the database or the page unescaped, passwords and keys written into the code, and code run from text
 - A critical problem stops the update, and your site keeps running the current version
 - `pnpm ship` runs the same check first, so Claude fixes problems before anything is sent
-- New **Settings > Security** page: the result for your live site, a Check now button, and a Copy for Claude button with every problem, where it is and how to fix it
+- New **Settings > Security** page: the result for your live site, a Check now button, and a Copy repair prompt button with every problem, where it is and how to fix it
 - Your live site and its packages are also checked once a day, and the result shows in Site health
 - Claude's instructions (`CLAUDE.md`) now include security rules for every feature it builds
 - The installed UltimaPress version now shows on the dashboard and in Site health, with a notice when a newer version is released
@@ -481,7 +481,7 @@ taken, changes only your site made are kept, and files both changed are combined
 Your packages are added to the new version's, and the database migrations of both are kept.
 The result then goes through the same steps as any new version: security check, backup, build,
 and a switch only if it starts. If both changed the same lines, nothing is changed on your site:
-download the updated code from Site code and give it to Claude with **Copy for Claude**.
+download the updated code from Site code and give it to your agent with **Copy repair prompt**.
 
 After **Update** in Docker Manager this happens on its own a few minutes after the server
 restarts. The new version comes from the server itself or from the version's release on GitHub. If a release also changes the server setup (the Docker image),

@@ -85,7 +85,7 @@ export function UpdateButton({ target, docker, href }: { target: string; docker:
     }
     return (
       <a className="up-dash__badge is-off" href="/admin/site-code">
-        {job.code === 'conflicts' ? 'Update needs Claude: open Site code' : 'Update did not go live: see why'}
+        {job.code === 'conflicts' ? 'Update needs attention: open Site code' : 'Update did not go live: see why'}
       </a>
     )
   }

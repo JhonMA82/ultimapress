@@ -9,7 +9,7 @@ import './build-feature.scss'
 
 /**
  * "Build a feature": its own admin page (/admin/build-a-feature) that walks the
- * site owner through adding something new with Claude. Linked from the Spine.
+ * site owner through adding something new with a coding agent. Linked from the Spine.
  */
 export function BuildFeatureView({ initPageResult, params, searchParams }: AdminViewServerProps) {
   const { req, permissions, visibleEntities, locale } = initPageResult
@@ -30,11 +30,12 @@ export function BuildFeatureView({ initPageResult, params, searchParams }: Admin
       <Gutter>
         <div className="up-build">
           <header className="up-build__head">
-            <p className="up-build__eyebrow">Built with Claude</p>
+            <p className="up-build__eyebrow">Built with AI</p>
             <h1>Build your first feature</h1>
             <p className="up-build__lead">
-              Describe what you want in plain English and Claude builds it into your site: events,
-              bookings, a shop, courses, anything. No plugins to install or keep updated.
+              Describe what you want in plain English and your coding agent builds it into your
+              site: events, bookings, a shop, courses, anything. No plugins to install or keep
+              updated.
             </p>
           </header>
           <BuildFeatureGuide />

@@ -4,7 +4,7 @@ import type { ServerProps } from 'payload'
 import { Icon } from './icons'
 import { SeedButton } from './SeedButton'
 import { WordPressImporter } from './WordPressImporter'
-import { BuildWithClaude } from './BuildWithClaude'
+import { BuildWithAI } from './BuildWithAI'
 import { getServerSideURL } from '@/utilities/getURL'
 import { availableUpdate, lastAutoUpdate, RELEASES_URL, siteCodeAvailable, upVersion } from '@/utilities/version'
 import { UpdateButton } from './UpdateButton'
@@ -305,10 +305,7 @@ const BeforeDashboard = async ({ payload, user }: ServerProps) => {
           )}
         </div>
         <div className={`${b}__col`}>
-          <BuildWithClaude
-            connections={connections.totalDocs}
-            repoUrl="https://github.com/mrwebtv/ultimapress"
-          />
+          <BuildWithAI connections={connections.totalDocs} />
         </div>
       </div>
 

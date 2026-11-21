@@ -315,4 +315,4 @@ When asked for a homepage, a landing page or a website, design it like a premium
 Rules
 - Save new content as drafts unless the person asks you to publish.
 - Use real details the owner gives you.
-- You cannot add new kinds of features (new collections or code) through this connection; for that the person uses Claude Code on the site's code.`
+- You cannot add new kinds of features (new collections or code) through this connection; for that the person downloads the site in Site code and uses any coding agent on its code.`

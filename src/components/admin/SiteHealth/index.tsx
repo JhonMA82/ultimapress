@@ -110,14 +110,14 @@ async function runChecks(payload: Payload, admin: string): Promise<Check[]> {
     if (!live) {
       checks.push({ status: 'warn', title: 'The security check has not run yet', detail: 'It runs a few minutes after the site starts, or check now.', href: `${admin}/security`, action: 'Check now' })
     } else if (live.critical.length) {
-      checks.push({ status: 'bad', title: `${live.critical.length} critical security problem(s) in the code`, detail: 'Copy them for Claude and ask it to fix them.', href: `${admin}/security`, action: 'See problems' })
+      checks.push({ status: 'bad', title: `${live.critical.length} critical security problem(s) in the code`, detail: 'Copy the repair prompt and ask your agent to fix them.', href: `${admin}/security`, action: 'See problems' })
     } else if (live.warnings.length) {
       checks.push({ status: 'warn', title: `${live.warnings.length} security warning(s) in the code`, detail: 'They do not block updates, but are worth fixing.', href: `${admin}/security`, action: 'See warnings' })
     } else {
       checks.push({ status: 'good', title: 'The security check passed', detail: 'No problems found in your site’s code.' })
     }
     if (live?.packages.counts && live.packages.counts.critical > 0) {
-      checks.push({ status: 'warn', title: `${live.packages.counts.critical} package(s) with a critical known vulnerability`, detail: 'Update UltimaPress, or ask Claude to update the packages.', href: `${admin}/security`, action: 'See packages' })
+      checks.push({ status: 'warn', title: `${live.packages.counts.critical} package(s) with a critical known vulnerability`, detail: 'Update UltimaPress, or ask your agent to update the packages.', href: `${admin}/security`, action: 'See packages' })
     }
   } catch {
     /* the check is not available here */

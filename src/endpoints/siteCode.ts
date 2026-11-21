@@ -57,7 +57,7 @@ const tooBig = () =>
   json(
     {
       error:
-        'That file is too large. Zip the site folder without node_modules and .next, or ask Claude to "put it live", which leaves them out.',
+        'That file is too large. Zip the site folder without node_modules and .next, or run `pnpm ship`, which leaves them out.',
     },
     413,
   )
@@ -167,7 +167,7 @@ const upload: Endpoint = {
   },
 }
 
-/** POST /api/site-code/deploy { password }: puts the update sent by Claude live. */
+/** POST /api/site-code/deploy { password }: puts the waiting update live. */
 const deploy: Endpoint = {
   path: '/site-code/deploy',
   method: 'post',
@@ -178,13 +178,13 @@ const deploy: Endpoint = {
     if (!(await passwordOk(req, data.password))) return json({ error: 'Wrong password.' }, 403)
     const staged = readStaged()
     if (!staged) return json({ error: 'There is no update waiting.' }, 400)
-    const res = await supervisor('/deploy', { file: staged.file, by: who(req), note: 'Sent by Claude' })
+    const res = await supervisor('/deploy', { file: staged.file, by: who(req), note: 'Sent from your computer' })
     if (res.ok) clearStaged()
     return json(res.data, res.status)
   },
 }
 
-/** POST /api/site-code/discard { password }: throws away the update sent by Claude. */
+/** POST /api/site-code/discard { password }: throws away the waiting update. */
 const discard: Endpoint = {
   path: '/site-code/discard',
   method: 'post',
@@ -267,7 +267,7 @@ const autoUpdate: Endpoint = {
   },
 }
 
-/** GET /api/site-code/upgrade-download?id=<update id>: an update that needs Claude, as a zip. */
+/** GET /api/site-code/upgrade-download?id=<update id>: an update that needs attention, as a zip. */
 const upgradeDownload: Endpoint = {
   path: '/site-code/upgrade-download',
   method: 'get',

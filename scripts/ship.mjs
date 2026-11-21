@@ -45,7 +45,7 @@ if (arg('site') || arg('key')) {
 }
 
 // Security check first: the site runs the same check and refuses critical problems,
-// so they are reported here, where Claude can fix them before anything is sent.
+// so they are reported here, where your agent can fix them before anything is sent.
 {
   const { scanSecurity, report } = await import(pathToFileURL(path.join(root, 'docker', 'security-check.mjs')).href)
   console.log('Checking security…')

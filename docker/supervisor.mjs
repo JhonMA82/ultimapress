@@ -516,7 +516,7 @@ const securityGate = async (id, dir) => {
     const n = result.critical.length
     const e = new Error(
       `The security check found ${n} critical problem${n === 1 ? '' : 's'} in this version, so it was not put live. ` +
-        'They are listed below: copy them for Claude to fix, then send the update again.',
+        'They are listed below: copy the repair prompt for your agent to fix, then send the update again.',
     )
     e.code = 'security'
     throw e
@@ -695,7 +695,7 @@ const upgrade = async ({ id, by, to }) => {
       }
       const base = await sources.get(baseVersion)
       const result = mergeSites({ base, ours, theirs, out: dir, baseVersion, newVersion })
-      appendLog(`\nMerged UltimaPress ${baseVersion} to ${newVersion}: ${result.conflicts.length} file(s) need Claude.\n`)
+      appendLog(`\nMerged UltimaPress ${baseVersion} to ${newVersion}: ${result.conflicts.length} file(s) need attention.\n`)
       for (const n of result.notes) appendLog(`  ${n}\n`)
       for (const c of result.conflicts) appendLog(`  ${c.file}: ${c.why}\n`)
       job.upgrade.notes = result.notes
@@ -709,7 +709,7 @@ const upgrade = async ({ id, by, to }) => {
         const n = result.conflicts.length
         const e = new Error(
           `UltimaPress ${newVersion} and your own features both changed ${n} file${n === 1 ? '' : 's'}, so nothing was changed on your site. ` +
-            'Download the updated code and give it to Claude with the text below. Then put it live as usual.',
+            'Download the updated code and give it to your agent with the text below. Then put it live as usual.',
         )
         e.code = 'conflicts'
         throw e

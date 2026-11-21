@@ -24,8 +24,8 @@ export const SPINE_NODES: { key: SpineNodeKey; label: string; hint: string }[] =
   { key: 'media', label: 'Media', hint: 'Images and files' },
   { key: 'design', label: 'Design', hint: 'Look and feel' },
   { key: 'grow', label: 'Grow', hint: 'Visitors and SEO' },
-  { key: 'build', label: 'Build', hint: 'With Claude' },
-  { key: 'yours', label: 'Your features', hint: 'Built with Claude' },
+  { key: 'build', label: 'Build', hint: 'With AI' },
+  { key: 'yours', label: 'Your features', hint: 'Built with AI' },
 ]
 
 export type SpineRow = {

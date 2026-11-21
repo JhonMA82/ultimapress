@@ -467,7 +467,7 @@ export async function deepCheck(dir, { bin, baseline = [] }) {
       severity,
       title: firstSentence(f.message),
       why: `${f.message}${f.cwe ? ` (${f.cwe})` : ''}`,
-      fix: 'Change the code so it no longer does this, or ask Claude to fix it using the explanation above. If it is safe on purpose, say why with // up-security: <reason>.',
+      fix: 'Change the code so it no longer does this, or ask your agent to fix it using the explanation above. If it is safe on purpose, say why with // up-security: <reason>.',
       file: f.file,
       line: f.line,
       code: f.code,

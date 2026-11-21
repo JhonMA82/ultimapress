@@ -220,7 +220,7 @@ export async function Spine(props: Props) {
     yours.badge = yours.sections.length
   } else {
     yours.empty = {
-      text: 'Features you build with Claude appear here: events, bookings, a shop, courses, anything.',
+      text: 'Features you build with your coding agent appear here: events, bookings, a shop, courses, anything.',
       href: `${admin}/build-a-feature`,
       cta: 'Build your first feature',
     }

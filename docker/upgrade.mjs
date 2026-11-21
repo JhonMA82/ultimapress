@@ -222,15 +222,21 @@ export const mergeSites = ({ base, ours, theirs, out, baseVersion, newVersion })
   return { conflicts, notes, typesMerged, lockChanged }
 }
 
-/** The text to paste into Claude Code when some changes could not be combined. */
-export const conflictsForClaude = ({ conflicts, baseVersion, newVersion }) =>
-  [
+/** The text to paste into a coding agent when some changes could not be combined. */
+export const conflictsForClaude = ({ conflicts, baseVersion, newVersion }) => {
+  const agentsConflicted = conflicts.some((c) => c.file === 'AGENTS.md')
+  return [
     `I'm updating my UltimaPress site from ${baseVersion} to ${newVersion}. The update combined my site's own changes with the new UltimaPress, but these files were changed on both sides and need you:`,
     '',
     ...conflicts.map((c) => `- ${c.file}: ${c.why}`),
     '',
-    'Read CLAUDE.md first. In each file, the parts between <<<<<<< your site and >>>>>>> are the two versions. Combine them so my features keep working with the new UltimaPress, and remove every marker. Then run `npx tsc --noEmit` and `node docker/security-check.mjs`, fix anything they report, and put it live (or zip the folder for Site code).',
+    'Read AGENTS.md first. ' +
+      (agentsConflicted
+        ? 'AGENTS.md is one of the files above: resolve its markers first, keeping both the Next.js block the tool writes and the site-specific rules, then follow the guide. '
+        : '') +
+      'In each file, the parts between <<<<<<< your site and >>>>>>> are the two versions. Combine them so my features keep working with the new UltimaPress, and remove every marker. Then run `npx tsc --noEmit` and `node docker/security-check.mjs`, fix anything they report, and put it live (or zip the folder for Site code).',
   ].join('\n')
+}
 
 // ---------------------------------------------------------------- official sources
 
