@@ -10,6 +10,8 @@ Plan: `02-DOCS/wiki/sdd/plans/agent-support.md`.
 - [review-after] Q3 — El selector de cliente no persiste: tras recargar vuelve a `Any MCP-compatible client`, spec.
 - [review-after] Q4 — Las dos entradas `SKILL.md` son idénticas y `.claude` apunta a la guía bajo `.agents`; la copia sin `.claude` es la prueba de que no hay dependencia oculta, spec.
 - [review-after] Q5 — El README solo se alinea en las etiquetas de UI cambiadas; su narrativa de marketing queda fuera, spec.
+- [blocking] Q6 — La llamada real de Pi sigue pendiente: `pi mcp list` conecta y lista 39 herramientas, pero el Pi instalado no tiene proveedor (`No models available`); hace falta una credencial para repetir `writePost`, task T011.
+- [blocking] Q7 — La entrega Docker se quedó en el build: dos intentos abortaron con `The server restarted during this update.` en una máquina de 3,7 GB; el 200 tras confirmar y el rollback deben repetirse en la PC nueva, task T012.
 
 ## Log
 
