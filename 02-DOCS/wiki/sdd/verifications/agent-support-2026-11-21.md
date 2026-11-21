@@ -59,12 +59,13 @@ Spec: `02-DOCS/wiki/sdd/specs/agent-support.md`. Plan:
 ### AC2 — ZIP contents — PASS (official endpoint)
 
 `GET /api/site-code/download` with an admin session returned `200`, `application/zip`, 5,272,689
-bytes. The listing (Python `zipfile`, equivalent to `unzip -l`) contains `AGENTS.md`, `CLAUDE.md`,
+bytes on the dev instance and `3,347,383` bytes on the Docker instance. The listing (Python
+`zipfile`, equivalent to `unzip -l`) contains `AGENTS.md`, `CLAUDE.md`,
 `.agents/skills/payload/SKILL.md`, `.claude/skills/payload/SKILL.md`,
 `.agents/skills/payload/guide.md` and `.agents/skills/payload/reference/ACCESS-CONTROL.md`;
 `.ultimapress-deploy.json` and `node_modules` are absent. The host has no `zip` binary, so a
-minimal `zip` stand-in implemented the same `zip -r -q - . -x …` arguments; the Docker runner
-installs the real `zip`. `.agents` is a real directory, no symlinks.
+minimal `zip` stand-in implemented the same `zip -r -q - . -x …` arguments on the dev instance;
+the Docker image installs the real `zip`. `.agents` is a real directory, no symlinks.
 
 ### AC3 — One key per connect, client switch free — PASS (component)
 
@@ -110,12 +111,23 @@ guide. `SiteCodeClient` renders `This update needs attention`, `Download the upd
 `Copy repair prompt`; `UpdateButton` says `Update needs attention: open Site code`. The conflict ZIP
 contains both skills, `AGENTS.md`, `CLAUDE.md` and the guide.
 
-### AC10 — Delivery staging and confirmation — PENDING (Docker unavailable)
+### AC10 — Delivery staging and confirmation — PARTIAL (build blocked by host memory)
 
-`docker compose … up -d --build --wait` cannot run: the daemon is inactive and starting it needs a
-password. Consequently the deploy-key staging, `An update is waiting`, the 404→200 marker check and
-the owner confirmation were not exercised. The code paths are unchanged in this feature; the copy
-was updated and type-checked.
+The disposable Docker stack was built and healthy (`docker compose -p up-agents-smoke`, Compose
+v5.8.0 installed as a CLI plugin, `127.0.0.1:18080`). With the deploy key:
+
+- `scripts/ship.mjs` sent the folder and the admin showed **`An update is waiting`** (3.0 MB,
+  neutral copy); `/agent-support-smoke.txt` returned **404** before confirmation.
+- Clicking **`Put the update live`**, entering the password and confirming started the supervisor
+  job (unpack → security → backup → install → build). The job then failed at **`Building the site`**
+  with `The server restarted during this update.`; the site stayed on 1.1.4 and nothing switched.
+- A second attempt after closing the browser and the backup container failed the same way. The
+  host has 3.7 GB of RAM (1.4 GB available), and the in-container Next build restarts the app
+  container during the build. The 200 marker, switch and rollback were not reached here.
+
+This is an environment limitation, reproducible twice, not a copy regression. The next step on a
+machine with more memory is to repeat the same staged update and confirm; the expected checks are
+`/agent-support-smoke.txt` 200 after the switch and 404 after **Previous version**.
 
 ### AC11 — Roles and revocation — PASS (real HTTP)
 
@@ -132,13 +144,17 @@ was updated and type-checked.
 - OpenCode 2.3.2: real `writePost` via `tools.ultimapress.writePost` →
   `Saved as a draft: "Agent support smoke - OpenCode" (id 3)`.
 - Pi 1.6.0: transport `connected`, 39 tools; model call pending (no provider credentials).
+- Docker instance, Author key: `writePost` →
+  `Saved as a draft: "Agent support smoke - Docker" (id 1)`, authors `["author"]`, `_status`
+  `draft`; `writePage` → `You are not allowed to perform this action.`; no denied page; legacy
+  `?key=` alias listed 39 tools; after revocation the call returned **401** and created nothing.
 
-### AC12 — MCP Inspector — PENDING
+### AC12 — MCP Inspector — PASS
 
-`npx @modelcontextprotocol/inspector` was not run against a live app: the dev server is unstable
-under this session (provider stream resets kill the supervised services) and Docker is unavailable.
-The same generic alternative was exercised with raw Streamable HTTP + `Authorization: Bearer`
-(initialize, `tools/list`, `writePost`), which is what the Inspector would list.
+`npx @modelcontextprotocol/inspector@latest --cli --server-url http://127.0.0.1:18080/api/mcp
+--transport http --header "Authorization: Bearer …" --method tools/list` returned **39 tools**,
+including `writePost` and `writePage`, against the Docker instance with the clean URL and Bearer
+header.
 
 ### AC13 — Commands — PASS with two pre-existing failures
 
@@ -153,25 +169,32 @@ copy. The README labels were updated; the marketing narrative was left out of sc
 
 ## Pending and why
 
-1. **Docker end-to-end and delivery** — daemon inactive, root password required; no real
-   `supervisor` deploy, staged upload, 404→200 or rollback was run.
-2. **Admin browser run** — `/admin` compiled and returned 200 once; the WebKit tab stayed blank
-   (HMR blocked, no hydration) and the dev server restarted. The picker was instead verified with
-   React Testing Library (3 tests) against the real component.
-3. **Pi model call** — Pi has no provider credentials in this environment. Transport and tool list
+1. **Docker update build** — the staged update reached the build step and the app container
+   restarted twice (`The server restarted during this update.`); the host has 3.7 GB of RAM. The
+   200 marker, switch and rollback must be repeated on a machine with more memory. The staging,
+   the `An update is waiting` UI and the pre-confirm 404 are proven.
+2. **Pi model call** — no provider credentials in this environment. Transport and the 39 tools
    are proven; the `writePost` call is pending.
-4. **Inspector UI** — no stable live app during the session.
+3. **Admin browser** — the production Docker admin rendered in Chromium, the selector showed the
+   seven clients, one POST created the connection, and the three native configs had no key. The
+   dev-server WebKit blank page is no longer relevant.
+4. **Inspector UI** — the Inspector CLI was used; the web UI was not opened.
 
-These are recorded as pending, not as passing. The rest of the contract is verified with the
-commands and outputs above.
+Everything except the Docker build completion and the Pi model call is verified with the commands
+and outputs above.
 
 ## Closing
 
-- Product commit: `39949c6` (`✨ Add native agent support for OMP, OpenCode V2 and Pi`), on
-  `main`, not pushed. The image workflow publishes from `main`, so pushing is the human's call.
+- Product commits: `39949c6` (`✨ Add native agent support for OMP, OpenCode V2 and Pi`) and
+  `77650ff` (`📝 Record the agent-support verification and parked state`), plus this record.
+  Upstream `mrwebtv/ultimapress` is untouched.
+- Handoff: fork **`JhonMA82/ultimapress`**; `main` is pushed there for work to continue on a more
+  powerful PC. The fork's `image.yml` may run on that push; it publishes under the fork's own
+  package, not the upstream one.
 - Final targeted run: 12/12 (`native-mcp-setup` 7 tests, `build-with-ai` 5). `pnpm exec tsc
   --noEmit` exit 0. `node docker/security-check.mjs`: passed, 0 critical.
 - Panel recorded as `agent-support/T013` (correctness, security, tests); the surviving findings
   were fixed before the commit. See `02-DOCS/wiki/sdd/reviews/agent-support.md`.
-- Parked: no push, no release, no image build. Exact command when the human decides:
-  `git push origin main` (this triggers `.github/workflows/image.yml`).
+- Remaining on the new PC: repeat the staged update and confirmation to reach the 200 marker and
+  the rollback; the local Docker build is memory-bound (3.7 GB host). Pi still needs a provider
+  credential for its model call.

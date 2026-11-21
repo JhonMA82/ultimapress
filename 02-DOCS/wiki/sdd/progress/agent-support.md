@@ -79,3 +79,25 @@ Plan: `02-DOCS/wiki/sdd/plans/agent-support.md`.
   push command is recorded in the verification file.
 - Remaining acceptance work is the Docker-dependent delivery and the environment-dependent
   browser/Pi/Inspector runs; all are listed as pending in the verification record.
+
+### 2026-11-21 — Docker close (prepared)
+
+- Clean product copy of `HEAD` extracted to `/tmp/up-docker-src` (no `.git`, no harness).
+- `/tmp/docker-prep.mjs`: admin/Author, connections, deploy key, marker, `ship.mjs`, staged check,
+  pre-confirm 404. `/tmp/docker-mcp.mjs`: Author writePost/writePage, alias, revocation.
+- Daemon is active, but `/var/run/docker.sock` is `root:docker 660` and the user is not in the
+  `docker` group; the ACL action is waiting in the Inbox. No compose build started yet.
+
+### 2026-11-21 — Docker instance results
+
+- Built and healthy with `docker compose -p up-agents-smoke` (Compose v5.8.0 plugin installed)
+  on `127.0.0.1:18080`; admin/Author created, connections and deploy key issued.
+- Browser (Chromium, production): dashboard rendered; seven clients; one POST on connect;
+  OMP/OpenCode/Pi configs exact and keyless; Site code showed `An update is waiting`; marker 404
+  before confirmation.
+- Docker MCP: Author `writePost` draft (id 1, author role), `writePage` denied, alias 39 tools,
+  revocation 401; Inspector CLI 39 tools; official ZIP 3,347,383 bytes with all required files.
+- Confirmation failed twice at `Building the site`: the app container restarted during the
+  in-container Next build (`The server restarted during this update.`). The host has 3.7 GB of
+  RAM; the site stayed on 1.1.4, so the 200 marker, switch and rollback remain for the new PC.
+- Fork `JhonMA82/ultimapress` created; `main` pushed for the handoff.
